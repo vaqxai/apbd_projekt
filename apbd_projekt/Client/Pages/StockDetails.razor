@@ -1,0 +1,9 @@
+﻿@using apbd_projekt.Shared
+
+<h3>StockDetails</h3>
+<p>Current ticker: @stock.Ticker</p>
+
+@code {
+	[Parameter]
+	public Stock stock { get; set; }
+}

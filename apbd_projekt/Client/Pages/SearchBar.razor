@@ -1,4 +1,5 @@
 ﻿@inject HttpClient Http
+@using apbd_projekt.Shared
 
 <div class="input-group mb-3">
 	<span class="input-group-text" id="basic-addon1">Search</span>
@@ -7,7 +8,12 @@
 
 @if(DisplayTickerDetails)
 {
-	<h3>Here be details</h3>
+	<div class="btn-group float-end">
+		<button class="btn btn-group btn-primary">Add to Watchlist</button>
+		<button class="btn btn-group btn-md btn-secondary" @onclick="@((e) => { StopDisplayingTickerDetails(); })">Return</button>
+	</div>
+
+	<StockDetails stock="@CurrentlyDisplayedStock"/>
 }
 else
 {
@@ -18,7 +24,7 @@ else
 			{
 				@foreach (var gameText in (from stock in Stocks where stock.Ticker.ToLower().Contains(CurrentValue.ToLower()) || stock.Name.ToLower().Contains(CurrentValue.ToLower()) select stock.Ticker).ToList())
 				{
-					<a type="button" class="list-group-item list-group-item-action" @onclick="@((e) => { DoDisplayTickerDetails(gameText); })"> <span class="badge bg-secondary"> @gameText </span> @GetStockQuickInfo(gameText) </a>
+					<a type="button" class="list-group-item list-group-item-action" @onclick="@((e) => { DoDisplayTickerDetails(gameText); })"> <span class="badge bg-secondary col-md-1"> @gameText </span> <span class="col-md-1">@GetStockQuickInfo(gameText)</span> </a>
 				}
 			}
 		}
@@ -29,6 +35,7 @@ else
 @code {
 
 	public bool DisplayTickerDetails = false;
+	public Stock CurrentlyDisplayedStock;
 	public string CurrentValue = "";
 
 	public void EmptySearchField()
@@ -56,16 +63,21 @@ else
 
 	}
 
+	public Stock GetStockObject(string ticker)
+	{
+		return Stocks.FirstOrDefault(s => s.Ticker == ticker);
+	}
+
 	public string GetStockQuickInfo(string ticker)
 	{
-		var stock = Stocks.FirstOrDefault(s => s.Ticker == ticker);
+		var stock = GetStockObject(ticker);
 		return stock.Name + " (" + stock.PrimaryExchange + ")";
 	}
 
 	public void DoDisplayTickerDetails(string ticker)
 	{
-		CurrentValue = ticker;
 		DisplayTickerDetails = true;
+		CurrentlyDisplayedStock = GetStockObject(ticker);
 	}
 
 	public void StopDisplayingTickerDetails()
@@ -77,13 +89,6 @@ else
 	{
 		//TODO: Remove null ref
 		return await Http.GetFromJsonAsync<Stock[]>("api/stocks?search=" + tickerPart);
-	}
-
-	public class Stock
-	{
-		public string Ticker { get; set; }
-		public string Name { get; set; }
-		public string PrimaryExchange { get; set; }
 	}
 
 	public ICollection<Stock> Stocks { get; set; }
