@@ -13,5 +13,7 @@ namespace apbd_projekt.Server.Data
             IOptions<OperationalStoreOptions> operationalStoreOptions) : base(options, operationalStoreOptions)
         {
         }
+
+        public DbSet<Stock> Stocks { get; set; }
     }
 }

@@ -1,5 +1,6 @@
 using apbd_projekt.Server.Data;
 using apbd_projekt.Server.Models;
+using apbd_projekt.Server.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
@@ -20,6 +21,8 @@ builder.Services.AddIdentityServer()
 
 builder.Services.AddAuthentication()
     .AddIdentityServerJwt();
+
+builder.Services.AddScoped<IStocksService, StocksService>();
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
