@@ -1,0 +1,19 @@
+﻿@page "/"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using apbd_projekt.Shared
+@attribute [Authorize]
+@inject HttpClient Http
+
+<PageTitle>Dashboard</PageTitle>
+
+<h1>Dashboard</h1>
+<p>Here you can see stock info and add tickers to your watchlist</p>
+
+<div>
+	<SearchBar />
+</div>
+
+@code {
+
+}

@@ -1,0 +1,74 @@
+﻿<div class="input-group mb-3">
+	<span class="input-group-text" id="basic-addon1">Search</span>
+	<input type="text" @bind="@CurrentValue" @onclick="@((e) => { EmptySearchField(); })" @oninput="@((e) => { ProcessValueEntry((string)e.Value); })" class="form-control" id="input_ticker" placeholder="Company Symbol">
+</div>
+
+@if(DisplayTickerDetails)
+{
+    <h3>Here be details</h3>
+}
+else
+{
+<div class="list-group">
+    @if(CurrentValue.Count() > 0)
+    {
+        @foreach (var gameText in (from game in Games where game.Text.ToLower().Contains(CurrentValue.ToLower()) select game.Text).ToList())
+        {
+            <a type="button" class="list-group-item list-group-item-action" @onclick="@((e) => { DoDisplayTickerDetails(gameText); })"> @gameText </a>
+        }
+    }
+</div>
+}
+
+
+@code {
+
+    public bool DisplayTickerDetails = false;
+    public string CurrentValue = "";
+
+    public void EmptySearchField()
+    {
+        CurrentValue = "";
+        StopDisplayingTickerDetails();
+    }
+
+    public void ProcessValueEntry(string newVal)
+    {
+        if(DisplayTickerDetails)
+        {
+            StopDisplayingTickerDetails();
+        }
+
+        CurrentValue = newVal;
+    }
+
+    public void DoDisplayTickerDetails(string ticker)
+    {
+        CurrentValue = ticker;
+        DisplayTickerDetails = true;
+    }
+
+    public void StopDisplayingTickerDetails()
+    {
+        DisplayTickerDetails = false;
+    }
+
+    public class GameFields
+    {
+        public string ID { get; set; }
+        public string Text { get; set; }
+    }
+    public List<GameFields> Games = new List<GameFields>()
+    {
+        new GameFields(){ ID= "Game1", Text= "American Football" },
+        new GameFields(){ ID= "Game2", Text= "Badminton" },
+        new GameFields(){ ID= "Game3", Text= "Basketball" },
+        new GameFields(){ ID= "Game4", Text= "Cricket" },
+        new GameFields(){ ID= "Game5", Text= "Football" },
+        new GameFields(){ ID= "Game6", Text= "Golf" },
+        new GameFields(){ ID= "Game7", Text= "Hockey" },
+        new GameFields(){ ID= "Game8", Text= "Rugby"},
+        new GameFields(){ ID= "Game9", Text= "Snooker" },
+        new GameFields(){ ID= "Game10",Text= "Tennis"}
+    };
+}
