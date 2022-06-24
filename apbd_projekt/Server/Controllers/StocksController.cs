@@ -16,17 +16,54 @@ namespace apbd_projekt.Server.Controllers
 			_service = service;
 		}
 
-		[HttpGet]
-		public async Task<IActionResult> SearchByTickerPart(string search)
+		[HttpGet("search")]
+		public async Task<IActionResult> SearchByTickerPart(string query)
 		{
-			var res = await _service.searchByTickerPart(search);
+			Console.Out.WriteLine("Request accepted");
+			if (await _service.isSearchCached(query))
+            {
+				var cachedResults = (await _service.getCachedSearch(query)).SearchResult;
+
+				if(cachedResults != null)
+					if(cachedResults.Count() > 0)
+					{
+						return Ok(IStocksService.getSearchResultDTO(cachedResults)); 
+					}else
+					{
+						await _service.removeSearchResultFromCache(query); // we don't want to keep empty search results cached (why were they cached in the first place?)
+					}
+            }
+            
+			var res = await _service.searchByTickerPart(query);
 			
 			if (res.Count() == 0)
             {
 				return NotFound("No stocks found with this ticker-part");
             }
 
-            return Ok(res);
+			await _service.saveSearchResultToCache(query, res);
+
+            return Ok(IStocksService.getSearchResultDTO(res));
         }
+
+		[HttpGet("stock")]
+		public async Task<IActionResult> GetByTicker(string ticker)
+		{
+			if (await _service.isCached(ticker))
+			{
+				return Ok((await _service.getCachedStock(ticker)).Stock);
+			}
+
+			var res = await _service.getFull(ticker);
+
+			if (res == null)
+			{
+				return NotFound("No stocks found with this ticker");
+			}
+
+			await _service.addToCache(res);
+
+			return Ok(res);
+		}            
 	}
 }

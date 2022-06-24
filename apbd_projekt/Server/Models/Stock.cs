@@ -4,9 +4,9 @@ namespace apbd_projekt.Server.Models
 {
     public class Stock
     {
-        [Key, MaxLength(4), MinLength(4)]
+        //TODO: Add fields, what fields are needed?
+        [Key]
+        public int StockId { get; set; }
         public string Ticker { get; set; }
-        public string Name { get; set; }
-        public string PrimaryExchange { get; set; }
     }
 }

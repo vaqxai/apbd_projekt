@@ -4,6 +4,8 @@ using apbd_projekt.Server.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,6 +25,11 @@ builder.Services.AddAuthentication()
     .AddIdentityServerJwt();
 
 builder.Services.AddScoped<IStocksService, StocksService>();
+
+JsonSerializerOptions jsonSerializerOptions = new() { 
+    ReferenceHandler = ReferenceHandler.Preserve,
+    WriteIndented = true
+};
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();

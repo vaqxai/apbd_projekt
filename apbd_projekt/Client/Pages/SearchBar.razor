@@ -1,9 +1,12 @@
 ﻿@inject HttpClient Http
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
 @using apbd_projekt.Shared
+@attribute [Authorize]
 
 <div class="input-group mb-3">
 	<span class="input-group-text" id="basic-addon1">Search</span>
-	<input type="text" @bind="@CurrentValue" @onclick="@((e) => { EmptySearchField(); })" @oninput="@((e) => { ProcessValueEntry((string)e.Value); })" class="form-control" id="input_ticker" placeholder="Company Symbol">
+	<input type="text" @bind="@CurrentValue" @onclick="@((e) => { EmptySearchField(); })" @oninput="@((e) => {ProcessValueEntry((string)e.Value); })" class="form-control" id="input_ticker" placeholder="Company Symbol">
 </div>
 
 @if(DisplayTickerDetails)
@@ -13,7 +16,7 @@
 		<button class="btn btn-group btn-md btn-secondary" @onclick="@((e) => { StopDisplayingTickerDetails(); })">Return</button>
 	</div>
 
-	<StockDetails stock="@CurrentlyDisplayedStock"/>
+	<StockDetails stockSearchResult="@CurrentlyDisplayedStock"/>
 }
 else
 {
@@ -35,7 +38,7 @@ else
 @code {
 
 	public bool DisplayTickerDetails = false;
-	public Stock CurrentlyDisplayedStock;
+	public SimpleStock CurrentlyDisplayedStock;
 	public string CurrentValue = "";
 
 	public void EmptySearchField()
@@ -63,7 +66,7 @@ else
 
 	}
 
-	public Stock GetStockObject(string ticker)
+	public SimpleStock GetStockObject(string ticker)
 	{
 		return Stocks.FirstOrDefault(s => s.Ticker == ticker);
 	}
@@ -85,11 +88,11 @@ else
 		DisplayTickerDetails = false;
 	}
 
-	public async Task<ICollection<Stock>> FetchTickers(string tickerPart)
+	public async Task<ICollection<SimpleStock>> FetchTickers(string tickerPart)
 	{
 		//TODO: Remove null ref
-		return await Http.GetFromJsonAsync<Stock[]>("api/stocks?search=" + tickerPart);
+		return await Http.GetFromJsonAsync<SimpleStock[]>("api/stocks/search?query=" + tickerPart);
 	}
 
-	public ICollection<Stock> Stocks { get; set; }
+	public ICollection<SimpleStock> Stocks { get; set; }
 }

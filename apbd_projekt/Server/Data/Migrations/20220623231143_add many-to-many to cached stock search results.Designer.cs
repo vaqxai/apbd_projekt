@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using apbd_projekt.Server.Data;
 
@@ -11,9 +12,10 @@ using apbd_projekt.Server.Data;
 namespace apbd_projekt.Server.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20220623231143_add many-to-many to cached stock search results")]
+    partial class addmanytomanytocachedstocksearchresults
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -91,9 +93,6 @@ namespace apbd_projekt.Server.Data.Migrations
                 {
                     b.Property<string>("Ticker")
                         .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime>("CachedOn")
-                        .HasColumnType("datetime2");
 
                     b.Property<string>("Name")
                         .IsRequired()

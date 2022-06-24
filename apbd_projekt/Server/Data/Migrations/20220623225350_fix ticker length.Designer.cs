@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using apbd_projekt.Server.Data;
 
@@ -11,9 +12,10 @@ using apbd_projekt.Server.Data;
 namespace apbd_projekt.Server.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20220623225350_fix ticker length")]
+    partial class fixtickerlength
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -87,27 +89,6 @@ namespace apbd_projekt.Server.Data.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("apbd_projekt.Server.Models.CachedSimpleStock", b =>
-                {
-                    b.Property<string>("Ticker")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime>("CachedOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PrimaryExchange")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Ticker");
-
-                    b.ToTable("StockStumps");
-                });
-
             modelBuilder.Entity("apbd_projekt.Server.Models.CachedStock", b =>
                 {
                     b.Property<int>("CachedStockId")
@@ -149,6 +130,32 @@ namespace apbd_projekt.Server.Data.Migrations
                     b.ToTable("CachedSearches");
                 });
 
+            modelBuilder.Entity("apbd_projekt.Server.Models.SimpleStock", b =>
+                {
+                    b.Property<string>("Ticker")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int?>("CachedStockSearchSearchId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PrimaryExchange")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("SearchId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Ticker");
+
+                    b.HasIndex("CachedStockSearchSearchId");
+
+                    b.ToTable("StockStumps");
+                });
+
             modelBuilder.Entity("apbd_projekt.Server.Models.Stock", b =>
                 {
                     b.Property<int>("StockId")
@@ -164,21 +171,6 @@ namespace apbd_projekt.Server.Data.Migrations
                     b.HasKey("StockId");
 
                     b.ToTable("Stocks");
-                });
-
-            modelBuilder.Entity("CachedSimpleStockCachedStockSearch", b =>
-                {
-                    b.Property<int>("AppearsInSearchId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("SearchResultTicker")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("AppearsInSearchId", "SearchResultTicker");
-
-                    b.HasIndex("SearchResultTicker");
-
-                    b.ToTable("CachedSimpleStockCachedStockSearch");
                 });
 
             modelBuilder.Entity("Duende.IdentityServer.EntityFramework.Entities.DeviceFlowCodes", b =>
@@ -470,19 +462,11 @@ namespace apbd_projekt.Server.Data.Migrations
                     b.Navigation("Stock");
                 });
 
-            modelBuilder.Entity("CachedSimpleStockCachedStockSearch", b =>
+            modelBuilder.Entity("apbd_projekt.Server.Models.SimpleStock", b =>
                 {
                     b.HasOne("apbd_projekt.Server.Models.CachedStockSearch", null)
-                        .WithMany()
-                        .HasForeignKey("AppearsInSearchId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("apbd_projekt.Server.Models.CachedSimpleStock", null)
-                        .WithMany()
-                        .HasForeignKey("SearchResultTicker")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .WithMany("SearchResult")
+                        .HasForeignKey("CachedStockSearchSearchId");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -534,6 +518,11 @@ namespace apbd_projekt.Server.Data.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("apbd_projekt.Server.Models.CachedStockSearch", b =>
+                {
+                    b.Navigation("SearchResult");
                 });
 #pragma warning restore 612, 618
         }

@@ -15,5 +15,10 @@ namespace apbd_projekt.Server.Data
         }
 
         public DbSet<Stock> Stocks { get; set; }
+        public DbSet<CachedSimpleStock> StockStumps { get; set; }
+        public DbSet<CachedStockSearch> CachedSearches { get; set; }
+
+        public DbSet<CachedStock> CachedStocks { get; set; }
+
     }
 }

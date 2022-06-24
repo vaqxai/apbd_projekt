@@ -1,9 +1,24 @@
-﻿@using apbd_projekt.Shared
+﻿@inject HttpClient Http
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using apbd_projekt.Shared
+@attribute [Authorize]
 
 <h3>StockDetails</h3>
-<p>Current ticker: @stock.Ticker</p>
+<p>Ticker: @fullStock.Ticker</p>
 
 @code {
 	[Parameter]
-	public Stock stock { get; set; }
+	public SimpleStock stockSearchResult { get; set; }
+
+	public Stock fullStock { get; set; }
+
+	public async Task<Stock> FetchStockAsync(string ticker)
+	{
+		return await Http.GetFromJsonAsync<Stock>("api/stocks/stock?ticker=" + ticker);
+	}
+
+	protected override async Task OnInitializedAsync(){
+		fullStock = await FetchStockAsync(stockSearchResult.Ticker);
+	}
 }
