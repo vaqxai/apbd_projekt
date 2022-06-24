@@ -6,6 +6,8 @@ using Microsoft.Extensions.Options;
 
 namespace apbd_projekt.Server.Data
 {
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+
     public class ApplicationDbContext : ApiAuthorizationDbContext<ApplicationUser>
     {
         public ApplicationDbContext(
@@ -14,11 +16,16 @@ namespace apbd_projekt.Server.Data
         {
         }
 
-        public DbSet<Stock> Stocks { get; set; }
+        protected override void OnModelCreating (ModelBuilder mb)
+        {
+            mb.Entity<StockDay>().HasKey(sd => new { sd.Ticker, sd.Date });
+        }
+
         public DbSet<CachedSimpleStock> StockStumps { get; set; }
         public DbSet<CachedStockSearch> CachedSearches { get; set; }
 
-        public DbSet<CachedStock> CachedStocks { get; set; }
+        public DbSet<Stock> Stocks { get; set; }
+        public DbSet<StockDay> StockDays { get; set; }
 
     }
 }

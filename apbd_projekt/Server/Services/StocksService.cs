@@ -158,9 +158,9 @@ namespace apbd_projekt.Server.Services
         }
 
         // full stocks
-        public async Task<CachedStock> getCachedStock(string ticker)
+        public async Task<Stock> getCachedStock(string ticker)
         {
-            var stock = await _context.CachedStocks.Include(cs => cs.Stock).FirstOrDefaultAsync(s => s.Stock.Ticker == ticker);
+            var stock = await _context.Stocks.Include(cs => cs.StockDays).FirstOrDefaultAsync(s => s.Ticker == ticker);
             if (stock != null)
             {
                 return stock;
@@ -208,17 +208,17 @@ namespace apbd_projekt.Server.Services
 
         public async Task addToCache(Stock stock)
         {
-            var cachedStock = new CachedStock
+            var cachedStock = new Stock
             {
-                Stock = stock,
-                CreatedOn = DateTime.Now
+                Ticker = stock.Ticker,
+                UpdatedOn = DateTime.Now
             };
 
             //is it necessary to: await _context.Stocks.AddAsync(stock); here?
-            await _context.CachedStocks.AddAsync(cachedStock);
+            await _context.Stocks.AddAsync(cachedStock);
             await _context.SaveChangesAsync();
         }
-
+        
         public async Task<Stock> getFull(string ticker)
         {
             HttpClient httpClient = new HttpClient();

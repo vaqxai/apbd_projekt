@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace apbd_projekt.Server.Data.Migrations
 {
-    public partial class addcachedondatetocachedsimplestocks : Migration
+    public partial class Addcachedondatetocachedsimplestocks : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {

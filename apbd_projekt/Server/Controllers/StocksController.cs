@@ -51,7 +51,7 @@ namespace apbd_projekt.Server.Controllers
 		{
 			if (await _service.isCached(ticker))
 			{
-				return Ok((await _service.getCachedStock(ticker)).Stock);
+				return Ok((await _service.getCachedStock(ticker)));
 			}
 
 			var res = await _service.getFull(ticker);

@@ -6,7 +6,17 @@
 
 <div class="input-group mb-3">
 	<span class="input-group-text" id="basic-addon1">Search</span>
-	<input type="text" @bind="@CurrentValue" @onclick="@((e) => { EmptySearchField(); })" @oninput="@((e) => {ProcessValueEntry((string)e.Value); })" class="form-control" id="input_ticker" placeholder="Company Symbol">
+	<input 
+		type="text"
+		@bind="@CurrentValue"
+		@onclick="@((e) => { EmptySearchField(); })" @oninput="@(async (e) => {
+			if(e.Value != null)
+				await ProcessValueEntry((string) e.Value); 
+		})"
+		class="form-control"
+		id="input_ticker"
+		placeholder="Company Symbol"
+	>
 </div>
 
 @if(DisplayTickerDetails)
@@ -37,7 +47,10 @@ else
 
 @code {
 
+	#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+
 	public bool DisplayTickerDetails = false;
+	public ICollection<SimpleStock>? Stocks { get; set; }
 	public SimpleStock CurrentlyDisplayedStock;
 	public string CurrentValue = "";
 
@@ -68,7 +81,19 @@ else
 
 	public SimpleStock GetStockObject(string ticker)
 	{
-		return Stocks.FirstOrDefault(s => s.Ticker == ticker);
+		if(Stocks != null)
+		{
+			var stock = Stocks.FirstOrDefault(s => s.Ticker == ticker);
+			if (stock == null)
+			{
+				throw new Exception("Stock object not found");
+			}
+			return stock;
+		} else
+		{
+			throw new Exception("Stocks list is null");
+		}
+
 	}
 
 	public string GetStockQuickInfo(string ticker)
@@ -90,9 +115,13 @@ else
 
 	public async Task<ICollection<SimpleStock>> FetchTickers(string tickerPart)
 	{
-		//TODO: Remove null ref
-		return await Http.GetFromJsonAsync<SimpleStock[]>("api/stocks/search?query=" + tickerPart);
-	}
+		var tickers = await Http.GetFromJsonAsync<SimpleStock[]>("api/stocks/search?query=" + tickerPart);
 
-	public ICollection<SimpleStock> Stocks { get; set; }
+		if(tickers == null)
+		{		
+			return new List<SimpleStock>(); // empty list if nothing found
+		}
+
+		return tickers;
+	}
 }

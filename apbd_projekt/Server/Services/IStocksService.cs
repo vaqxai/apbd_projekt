@@ -42,7 +42,7 @@ namespace apbd_projekt.Server.Services
 
         public Task<bool> isCached(string ticker);
 
-        public Task<CachedStock> getCachedStock(string ticker);
+        public Task<Stock> getCachedStock(string ticker);
 
         public Task addToCache(Stock stock);
 
