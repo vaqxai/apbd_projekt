@@ -12,8 +12,8 @@ using apbd_projekt.Server.Data;
 namespace apbd_projekt.Server.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20220623233258_add cached on date to cached simple stocks")]
-    partial class addcachedondatetocachedsimplestocks
+    [Migration("20220623233258_Add cached on date to cached simple stocks")]
+    partial class Addcachedondatetocachedsimplestocks
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {

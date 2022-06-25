@@ -18,6 +18,7 @@ namespace apbd_projekt.Server.Data
 
         protected override void OnModelCreating (ModelBuilder mb)
         {
+            base.OnModelCreating(mb);
             mb.Entity<StockDay>().HasKey(sd => new { sd.Ticker, sd.Date });
         }
 

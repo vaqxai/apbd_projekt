@@ -11,11 +11,13 @@ namespace apbd_projekt.Server.Models
 
         public string? CompanyName { get; set; }
 
-        public string? CeoName { get; set; }
+        public string? Description { get; set; }
         
         public string? Industry { get; set; }
 
         public string? Country { get; set; }
+
+        public string? LogoURL { get; set; }
 
         public DateTime UpdatedOn { get; set; }
 

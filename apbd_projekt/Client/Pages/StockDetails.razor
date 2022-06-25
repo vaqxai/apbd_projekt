@@ -4,8 +4,17 @@
 @using apbd_projekt.Shared
 @attribute [Authorize]
 
-<h3>StockDetails</h3>
-<p>Ticker: @fullStock.Ticker</p>
+<div class="row">
+	<div class="col-md-4">
+		<StockCard fullstock=@FullStock/>
+	</div>
+	<div class="col">
+		@if(FullStock != null && FullStock.StockDays != null)
+		{
+			<StockGraph stockdays="@FullStock.StockDays"/>
+		}
+	</div>
+</div>
 
 @code {
 	#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
@@ -13,7 +22,7 @@
 	[Parameter]
 	public SimpleStock stockSearchResult { get; set; }
 
-	public Stock fullStock { get; set; }
+	public Stock FullStock { get; set; }
 
 	public async Task<Stock> FetchStockAsync(string ticker)
 	{
@@ -28,6 +37,6 @@
 	}
 
 	protected override async Task OnInitializedAsync(){
-		fullStock = await FetchStockAsync(stockSearchResult.Ticker);
+		FullStock = await FetchStockAsync(stockSearchResult.Ticker);		
 	}
 }

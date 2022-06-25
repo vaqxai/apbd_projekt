@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using apbd_projekt.Server.Data;
 
@@ -11,9 +12,10 @@ using apbd_projekt.Server.Data;
 namespace apbd_projekt.Server.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20220625143359_restructure full stock info again")]
+    partial class restructurefullstockinfoagain
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -133,19 +135,16 @@ namespace apbd_projekt.Server.Data.Migrations
                     b.Property<string>("Ticker")
                         .HasColumnType("nvarchar(450)");
 
+                    b.Property<string>("CeoName")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("CompanyName")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Country")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Industry")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("LogoURL")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("UpdatedOn")
@@ -176,10 +175,12 @@ namespace apbd_projekt.Server.Data.Migrations
                     b.Property<double>("Open")
                         .HasColumnType("float");
 
-                    b.Property<int>("Volume")
-                        .HasColumnType("int");
+                    b.Property<string>("StockTicker")
+                        .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Ticker", "Date");
+
+                    b.HasIndex("StockTicker");
 
                     b.ToTable("StockDays");
                 });
@@ -479,13 +480,9 @@ namespace apbd_projekt.Server.Data.Migrations
 
             modelBuilder.Entity("apbd_projekt.Server.Models.StockDay", b =>
                 {
-                    b.HasOne("apbd_projekt.Server.Models.Stock", "Stock")
+                    b.HasOne("apbd_projekt.Server.Models.Stock", null)
                         .WithMany("StockDays")
-                        .HasForeignKey("Ticker")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Stock");
+                        .HasForeignKey("StockTicker");
                 });
 
             modelBuilder.Entity("CachedSimpleStockCachedStockSearch", b =>

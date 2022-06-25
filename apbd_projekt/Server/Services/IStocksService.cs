@@ -1,5 +1,4 @@
 ﻿using apbd_projekt.Server.Models;
-using apbd_projekt.Server.Models.DTOs;
 
 namespace apbd_projekt.Server.Services
 {
@@ -7,13 +6,13 @@ namespace apbd_projekt.Server.Services
     {
         // quick/searchbar stock info
 
-        public static ICollection<SimpleStockDTO> getSearchResultDTO(ICollection<CachedSimpleStock> searchResult)
+        public static ICollection<Shared.SimpleStock> getSearchResultDTO(ICollection<CachedSimpleStock> searchResult)
         {
-            var stonks_out = new List<SimpleStockDTO>();
+            var stonks_out = new List<Shared.SimpleStock>();
 
             foreach (var stock in searchResult)
             {
-                stonks_out.Add(new SimpleStockDTO
+                stonks_out.Add(new Shared.SimpleStock
                 {
                     Name = stock.Name,
                     Ticker = stock.Ticker,
@@ -38,15 +37,17 @@ namespace apbd_projekt.Server.Services
 
         // full stock info
 
-        public Task<Stock> getFull(string ticker);
+        public Task<Shared.Stock> getFull(string ticker);
 
         public Task<bool> isCached(string ticker);
 
         public Task<Stock> getCachedStock(string ticker);
 
-        public Task addToCache(Stock stock);
+        public Task addToCache(Shared.Stock stock);
 
         public Task removeDeceasedCachedStocks(string ticker);
+
+        public Task<ICollection<StockDay>> getDayInfo(string ticker, int n);
 
     }
 }

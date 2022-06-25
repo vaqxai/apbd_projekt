@@ -3,7 +3,6 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using apbd_projekt.Server.Data;
 using Microsoft.EntityFrameworkCore;
-using apbd_projekt.Server.Models.DTOs;
 
 namespace apbd_projekt.Server.Services
 {
@@ -23,7 +22,7 @@ namespace apbd_projekt.Server.Services
 
         public async Task<ICollection<CachedSimpleStock>> searchByTickerPart(string tickerPart)
         {
-            HttpClient Http = new HttpClient();
+            HttpClient Http = new();
             // TODO: Put api key somewhere else
             string Request = "https://api.polygon.io/v3/reference/tickers?";
             Request += "&apiKey=Tnp2_HTpZRIDK2Jcrppho5lLwn1tUqI7";
@@ -171,23 +170,43 @@ namespace apbd_projekt.Server.Services
             }
         }
 
+        public async Task UpdateCached(string ticker)
+        {
+            var cachedStock = await _context.Stocks.FirstOrDefaultAsync(s => s.Ticker == ticker);
+
+            if(cachedStock == null)
+            {
+                throw new Exception("cannot update cached stock which is null, did you forget to check if it is cached?");
+            }
+
+            var newStock = await getFull(ticker);
+
+            cachedStock.CompanyName = newStock.CompanyName;
+            cachedStock.Description = newStock.Description;
+            cachedStock.Industry = newStock.Industry;
+            cachedStock.LogoURL = newStock.LogoURL;
+            cachedStock.UpdatedOn = DateTime.Now;
+
+            await _context.SaveChangesAsync();
+        }
+
         public async Task<bool> isCached(string ticker)
         {
             if (await _context.Stocks.FirstOrDefaultAsync(s => s.Ticker == ticker) != null)
             {
                 if ((await getCachedStock(ticker)).GetAge() <= MAX_CACHED_AGE)
                 {
-                    return true;
+                    return true; // cached and not expired
                 }
                 else
                 {
-                    await removeDeceasedCachedStocks(ticker);
-                    return false;
+                    await UpdateCached(ticker); // cached but expired, we'll update it straight away
+                    return true;
                 }
             }
             else
             {
-                return false;
+                return false; // not cached
             }
         }
 
@@ -206,11 +225,16 @@ namespace apbd_projekt.Server.Services
             }
         }
 
-        public async Task addToCache(Stock stock)
+        public async Task addToCache(Shared.Stock stock)
         {
             var cachedStock = new Stock
             {
                 Ticker = stock.Ticker,
+                CompanyName = stock.CompanyName,
+                Description = stock.Description,
+                Industry = stock.Industry,
+                Country = stock.Country,
+                LogoURL = stock.LogoURL,
                 UpdatedOn = DateTime.Now
             };
 
@@ -218,21 +242,96 @@ namespace apbd_projekt.Server.Services
             await _context.Stocks.AddAsync(cachedStock);
             await _context.SaveChangesAsync();
         }
-        
-        public async Task<Stock> getFull(string ticker)
+
+        public async Task<ICollection<StockDay>> getDayInfo(string ticker, int n)
         {
-            HttpClient httpClient = new HttpClient();
-            string Request = "https://api.polygon.io/v2/aggs/ticker/" + ticker.ToUpper() + "/range/1/day/2022-06-20/2022-06-24?apiKey=Tnp2_HTpZRIDK2Jcrppho5lLwn1tUqI7"; //TODO: Move api key somewhere safer
+
+            var stock = await _context.Stocks.Include(s=> s.StockDays).FirstOrDefaultAsync(s => s.Ticker == ticker);
+
+            HttpClient httpClient = new();
+            string Request = "https://api.polygon.io/v2/aggs/ticker/" + ticker.ToUpper() + "/range/1/day/";
+
+            DateTime dateFrom = DateTime.Now.AddDays(-n);
+            DateTime dateTo = DateTime.Now;
+
+            string dateFromStr = dateFrom.Year + "-" + dateFrom.Month.ToString("D2") + "-" + dateFrom.Day.ToString("D2");
+            string dateToStr = dateTo.Year + "-" + dateTo.Month.ToString("D2") + "-" + dateTo.Day.ToString("D2");
+
+            if (stock.StockDays.Count > 0) // move start date to last day in cache to fill the data we're missing
+            {
+                dateFromStr = stock.StockDays.OrderBy(sd => sd.Date).Last().Date.AddDays(1).ToString("yyyy-MM-dd");
+
+                if (stock.StockDays.OrderBy(sd => sd.Date).Last().Date.Date == dateTo.Date) // stop doing everything if we're already up to date
+                {
+                    return stock.StockDays;
+                }
+            }
+
+            Request += dateFromStr + "/" + dateToStr;
+            Request += "?apiKey=Tnp2_HTpZRIDK2Jcrppho5lLwn1tUqI7";
+
             var resp = await httpClient.GetStreamAsync(Request);
             JsonNode data = await JsonSerializer.DeserializeAsync<JsonNode>(resp);
 
             JsonArray results = (JsonArray)data["results"];
 
-            JsonNode stonk = results[0];
+            List<StockDay> result = new();
 
-            Stock stock = new Stock
+            if (stock.StockDays == null)
             {
-                Ticker = ((double)stonk["c"]).ToString(),
+                stock.StockDays = new List<StockDay>();
+            }
+
+            for (int i = 0; i < (int)data["resultsCount"]; i++)
+            {
+                JsonNode stockDay = results[i];
+
+                var day = new StockDay
+                {
+                    Open = (double)stockDay["o"],
+                    High = (double)stockDay["h"],
+                    Low = (double)stockDay["l"],
+                    Close = (double)stockDay["c"],
+                    Volume = (int)stockDay["v"],
+                    Date = DateTimeOffset.FromUnixTimeMilliseconds((long)stockDay["t"]).DateTime
+                };
+
+                result.Add(day);
+                stock.StockDays.Add(day);
+            }
+
+            await _context.SaveChangesAsync();
+
+            return result;
+        }
+        
+        public async Task<Shared.Stock> getFull(string ticker)
+        {
+            HttpClient httpClient = new();
+            string Request = "https://api.polygon.io/v3/reference/tickers/"+ ticker.ToUpper() +"?apiKey=Tnp2_HTpZRIDK2Jcrppho5lLwn1tUqI7"; //TODO: Move api key somewhere safer
+            var resp = await httpClient.GetStreamAsync(Request);
+            JsonNode data = await JsonSerializer.DeserializeAsync<JsonNode>(resp);
+
+            JsonNode res = data["results"];
+
+            var companyName = (string)res["name"];
+            var description = (string)res["description"];
+            var industry = (string)res["sic_description"];
+            var country = (string)res["locale"];
+
+            var missingImageUrl = "https://upload.wikimedia.org/wikipedia/commons/b/b1/Missing-image-232x150.png"; // move this to appconfig
+
+            var logoUrl = (string)(res["branding"] == null ? missingImageUrl : res["branding"]["logo_url"] == null ? missingImageUrl : res["branding"]["logo_url"]);
+
+            var stock = new Shared.Stock
+            {
+                Ticker = ticker,
+                CompanyName = companyName,
+                Description = description,
+                Industry = industry,
+                Country = country,
+                LogoURL = logoUrl,
+                StockDays = new List<Shared.StockDay>()
             };
 
             return stock;
