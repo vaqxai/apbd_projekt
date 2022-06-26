@@ -11,21 +11,21 @@ namespace apbd_projekt.Server.Services
             _context = context;
         }
 
-        public async Task<ICollection<string>> getWatchlist(string userEmail)
+        public ICollection<string> GetWatchlist(string userEmail)
         {
             var watchlist = _context.Watchlists.Where(w => w.UserEmail == userEmail).ToList();
             return watchlist.Select(w => w.Ticker).ToList();
         }
 
-        public async Task<bool> isInWatchlist(string userEmail, string ticker)
+        public bool IsInWatchlist(string userEmail, string ticker)
         {
             var watchlist = _context.Watchlists.Where(w => w.UserEmail == userEmail && w.Ticker == ticker).ToList();
             return watchlist.Count > 0;
         }
 
-        public async Task addToWatchlist(string userEmail, string ticker)
+        public async Task AddToWatchlist(string userEmail, string ticker)
         {
-            if(await isInWatchlist(userEmail, ticker))
+            if(IsInWatchlist(userEmail, ticker))
             {
                 throw new Exception("ticker is already on user's watchlist");
             }
@@ -39,9 +39,9 @@ namespace apbd_projekt.Server.Services
             await _context.SaveChangesAsync();
         }
 
-        public async Task removeFromWatchlist(string userEmail, string ticker)
+        public async Task RemoveFromWatchlist(string userEmail, string ticker)
         {
-            if(!await isInWatchlist(userEmail, ticker))
+            if(IsInWatchlist(userEmail, ticker))
             {
                 return;
             }
@@ -56,7 +56,7 @@ namespace apbd_projekt.Server.Services
             await _context.SaveChangesAsync();
         }
 
-        public async Task<bool> hasWatchlist(string userEmail)
+        public bool HasWatchlist(string userEmail)
         {
             var watchlist = _context.Watchlists.Where(w => w.UserEmail == userEmail).ToList();
             return watchlist.Count > 0;

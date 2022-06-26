@@ -13,7 +13,7 @@
 			<StockCard fullstock=@FullStock/>
 		</div>
 		<div class="col">
-			@if(FullStock != null && FullStock.StockDays != null)
+			@if(FullStock != null && FullStock.StockDays != null && FullStock.StockDays.Count > 0)
 			{
 				<StockGraph stockdays="@FullStock.StockDays"/>
 			}

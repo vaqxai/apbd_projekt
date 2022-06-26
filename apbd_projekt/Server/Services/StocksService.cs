@@ -20,7 +20,7 @@ namespace apbd_projekt.Server.Services
             _context = context;
         }
 
-        public async Task<ICollection<CachedSimpleStock>> searchByTickerPart(string tickerPart)
+        public async Task<ICollection<CachedSimpleStock>> SearchByTickerPart(string tickerPart)
         {
             HttpClient Http = new();
             // TODO: Put api key somewhere else
@@ -51,17 +51,17 @@ namespace apbd_projekt.Server.Services
             return stonks_out;
         }
 
-        public async Task<bool> isSearchCached(string tickerPart)
+        public async Task<bool> IsSearchCached(string tickerPart)
         {
             if (await _context.CachedStockSearches.FirstOrDefaultAsync(cs => cs.SearchTerm == tickerPart) != null) // could also only search for non-expired cached search results
             {
-                if ((await getCachedSearch(tickerPart)).GetAge() <= MAX_CACHED_AGE)
+                if ((await GetCachedSearch(tickerPart)).GetAge() <= MAX_CACHED_AGE)
                 {
                     return true; // there exists a cached search result that is not expired
                 }
                 else
                 {
-                    await removeDeceasedCachedResults(tickerPart);
+                    await RemoveDeceasedCachedResults(tickerPart);
                     return false;  // there exists an expired cached search result
                 }
             }
@@ -71,12 +71,12 @@ namespace apbd_projekt.Server.Services
             }
         }
 
-        public async Task<CachedStockSearch> getCachedSearch(string tickerPart)
+        public async Task<CachedStockSearch> GetCachedSearch(string tickerPart)
         {
             return await _context.CachedStockSearches.Include(cs => cs.SearchResult).FirstOrDefaultAsync(cs => cs.SearchTerm == tickerPart);
         }
 
-        public async Task saveSearchResultToCache(string searchTerm, ICollection<CachedSimpleStock> searchResult)
+        public async Task SaveSearchResultToCache(string searchTerm, ICollection<CachedSimpleStock> searchResult)
         {
 
             ICollection<CachedSimpleStock> srwcs = new List<CachedSimpleStock>(); // search result containing cached simplestocks
@@ -122,7 +122,7 @@ namespace apbd_projekt.Server.Services
 
         }
 
-        public async Task removeDeceasedCachedResults(string searchTerm)
+        public async Task RemoveDeceasedCachedResults(string searchTerm)
         {
             // first remove all deceased stocks which used this search term (in ticker or in company name)
             
@@ -146,7 +146,7 @@ namespace apbd_projekt.Server.Services
             await _context.SaveChangesAsync();
         }
 
-        public async Task removeSearchResultFromCache(string searchTerm)
+        public async Task RemoveSearchResultFromCache(string searchTerm)
         {
             var cachedResult = await _context.CachedStockSearches.FirstOrDefaultAsync(cs => cs.SearchTerm == searchTerm);
             if(cachedResult != null)
@@ -157,7 +157,7 @@ namespace apbd_projekt.Server.Services
         }
 
         // full stocks
-        public async Task<Stock> getCachedStock(string ticker)
+        public async Task<Stock> GetCachedStock(string ticker)
         {
             var stock = await _context.Stocks.Include(cs => cs.StockDays).FirstOrDefaultAsync(s => s.Ticker == ticker);
             if (stock != null)
@@ -179,7 +179,7 @@ namespace apbd_projekt.Server.Services
                 throw new Exception("cannot update cached stock which is null, did you forget to check if it is cached?");
             }
 
-            var newStock = await getFull(ticker);
+            var newStock = await GetFull(ticker);
 
             cachedStock.CompanyName = newStock.CompanyName;
             cachedStock.Description = newStock.Description;
@@ -190,35 +190,27 @@ namespace apbd_projekt.Server.Services
             await _context.SaveChangesAsync();
         }
 
-        public async Task<bool> isCached(string ticker)
+        public async Task<bool> IsCached(string ticker)
         {
-            Console.Out.WriteLine("Checking if stock is cached");
             if (await _context.Stocks.FirstOrDefaultAsync(s => s.Ticker == ticker) != null)
             {
-                Console.Out.WriteLine("Inside check");
-                if ((await getCachedStock(ticker)).GetAge() <= MAX_CACHED_AGE)
+                if ((await GetCachedStock(ticker)).GetAge() <= MAX_CACHED_AGE)
                 {
-                    Console.Out.WriteLine("STOCK IS CACHED");
                     return true; // cached and not expired
                 }
                 else
                 {
-                    Console.Out.WriteLine("STOCK IS CACHED BUT NEEDS UPDATING");
                     await UpdateCached(ticker); // cached but expired, we'll update it straight away
                     return true;
                 }
-                Console.Out.WriteLine("NO EVENT FIRED?");
             }
             else
             {
                 return false; // not cached
-                Console.Out.WriteLine("STOCK IS NOT CACHED");
             }
-
-            Console.Out.WriteLine("SOMETHING ELSE HAPPENED");
         }
 
-        public async Task removeDeceasedCachedStocks(string ticker)
+        public async Task RemoveDeceasedCachedStocks(string ticker)
         {
             var stocks = from s in _context.Stocks
                          where s.Ticker == ticker
@@ -226,14 +218,14 @@ namespace apbd_projekt.Server.Services
 
             foreach (Stock stock in stocks)
             {
-                if ((await getCachedStock(stock.Ticker)).GetAge() > MAX_CACHED_AGE || (await getCachedStock(stock.Ticker)).GetAge() < 0) // protect against integer overflow if someone puts an epoch-0 in the cachedOn date...
+                if ((await GetCachedStock(stock.Ticker)).GetAge() > MAX_CACHED_AGE || (await GetCachedStock(stock.Ticker)).GetAge() < 0) // protect against integer overflow if someone puts an epoch-0 in the cachedOn date...
                 {
                     _context.Stocks.Remove(stock);
                 }
             }
         }
 
-        public async Task addToCache(Shared.Stock stock)
+        public async Task AddToCache(Shared.Stock stock)
         {
             var cachedStock = new Stock
             {
@@ -251,7 +243,7 @@ namespace apbd_projekt.Server.Services
             await _context.SaveChangesAsync();
         }
 
-        public async Task<ICollection<StockDay>> getDayInfo(string ticker, int n)
+        public async Task<ICollection<StockDay>> GetDayInfo(string ticker, int n)
         {
 
             var stock = await _context.Stocks.Include(s=> s.StockDays).FirstOrDefaultAsync(s => s.Ticker == ticker);
@@ -283,8 +275,6 @@ namespace apbd_projekt.Server.Services
 
             JsonArray results = (JsonArray)data["results"];
 
-            List<StockDay> result = new();
-
             if (stock.StockDays == null)
             {
                 stock.StockDays = new List<StockDay>();
@@ -304,16 +294,15 @@ namespace apbd_projekt.Server.Services
                     Date = DateTimeOffset.FromUnixTimeMilliseconds((long)stockDay["t"]).DateTime
                 };
 
-                result.Add(day);
                 stock.StockDays.Add(day);
             }
 
             await _context.SaveChangesAsync();
 
-            return result;
+            return stock.StockDays;
         }
         
-        public async Task<Shared.Stock> getFull(string ticker)
+        public async Task<Shared.Stock> GetFull(string ticker)
         {
             HttpClient httpClient = new();
             string Request = "https://api.polygon.io/v3/reference/tickers/"+ ticker.ToUpper() +"?apiKey=Tnp2_HTpZRIDK2Jcrppho5lLwn1tUqI7"; //TODO: Move api key somewhere safer
@@ -329,7 +318,7 @@ namespace apbd_projekt.Server.Services
 
             var missingImageUrl = "https://upload.wikimedia.org/wikipedia/commons/b/b1/Missing-image-232x150.png"; // move this to appconfig
 
-            var logoUrl = (string)(res["branding"] == null ? missingImageUrl : res["branding"]["logo_url"] == null ? missingImageUrl : res["branding"]["logo_url"]);
+            var logoUrl = (string)(res["branding"] == null ? missingImageUrl : res["branding"]["logo_url"] ?? missingImageUrl);
 
             var stock = new Shared.Stock
             {

@@ -6,7 +6,7 @@ namespace apbd_projekt.Server.Services
     {
         // quick/searchbar stock info
 
-        public static ICollection<Shared.SimpleStock> getSearchResultDTO(ICollection<CachedSimpleStock> searchResult)
+        public static ICollection<Shared.SimpleStock> GetSearchResultDTO(ICollection<CachedSimpleStock> searchResult)
         {
             var stonks_out = new List<Shared.SimpleStock>();
 
@@ -23,31 +23,31 @@ namespace apbd_projekt.Server.Services
             return stonks_out;
         }
 
-        public Task<ICollection<CachedSimpleStock>> searchByTickerPart(string tickerPart);
+        public Task<ICollection<CachedSimpleStock>> SearchByTickerPart(string tickerPart);
 
-        public Task<bool> isSearchCached(string tickerPart);
+        public Task<bool> IsSearchCached(string tickerPart);
 
-        public Task<CachedStockSearch> getCachedSearch(string tickerPart);
+        public Task<CachedStockSearch> GetCachedSearch(string tickerPart);
 
-        public Task saveSearchResultToCache(string searchTerm, ICollection<CachedSimpleStock> searchResult);
+        public Task SaveSearchResultToCache(string searchTerm, ICollection<CachedSimpleStock> searchResult);
 
-        public Task removeSearchResultFromCache(string searchTerm);
+        public Task RemoveSearchResultFromCache(string searchTerm);
 
-        public Task removeDeceasedCachedResults(string searchTerm);
+        public Task RemoveDeceasedCachedResults(string searchTerm);
 
         // full stock info
 
-        public Task<Shared.Stock> getFull(string ticker);
+        public Task<Shared.Stock> GetFull(string ticker);
 
-        public Task<bool> isCached(string ticker);
+        public Task<bool> IsCached(string ticker);
 
-        public Task<Stock> getCachedStock(string ticker);
+        public Task<Stock> GetCachedStock(string ticker);
 
-        public Task addToCache(Shared.Stock stock);
+        public Task AddToCache(Shared.Stock stock);
 
-        public Task removeDeceasedCachedStocks(string ticker);
+        public Task RemoveDeceasedCachedStocks(string ticker);
 
-        public Task<ICollection<StockDay>> getDayInfo(string ticker, int n);
+        public Task<ICollection<StockDay>> GetDayInfo(string ticker, int n);
 
     }
 }

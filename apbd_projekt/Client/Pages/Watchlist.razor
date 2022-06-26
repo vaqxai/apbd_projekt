@@ -74,6 +74,17 @@
 
 	// TODO: Don't duplicate methods
 
+	private async Task<string> GetUserName()
+	{
+		var identity = (await asp.GetAuthenticationStateAsync()).User.Identity;
+
+		if(identity == null || identity.Name == null){
+			throw new Exception("This feature requires login");
+		}
+
+		return identity.Name;
+	}
+
 	protected override async Task OnInitializedAsync()
 	{
 		await UpdateWatchlist();
@@ -81,17 +92,25 @@
 
 	public ICollection<Stock> getSortedStocks()
 	{
-		var sortedStocks = this.TrackedStocks.OrderBy(x => x.GetType().GetProperty(SortingBy).GetValue(x)).ToList();
+		var prop = typeof(Stock).GetProperty(SortingBy);
+
+		if(prop == null)
+		{
+			return this.TrackedStocks;
+		}
+
+		var sortedStocks = this.TrackedStocks.OrderBy(x => prop.GetValue(x)).ToList();
 		if (!SortingMode)
 		{
 			sortedStocks.Reverse();
 		}
+
 		return sortedStocks;
 	}
 
 	public async Task AddToWatchlist(string ticker)
 	{
-		var user = (await asp.GetAuthenticationStateAsync()).User.Identity.Name;
+		var user = GetUserName();
 
 		await Http.PostAsync($"api/watchlists/{user}/{ticker}", null);
 		await UpdateWatchlist();
@@ -99,7 +118,7 @@
 
 	public async Task RemoveFromWatchlist(string ticker)
 	{
-		var user = (await asp.GetAuthenticationStateAsync()).User.Identity.Name;
+		var user = GetUserName();
 
 		await Http.DeleteAsync($"api/watchlists/{user}/{ticker}");
 		await UpdateWatchlist();
@@ -107,7 +126,7 @@
 
 	public async Task UpdateWatchlist()
 	{
-		var newWatchlist = await Http.GetFromJsonAsync<ICollection<string>>("api/watchlists/" + (await asp.GetAuthenticationStateAsync()).User.Identity.Name);
+		var newWatchlist = await Http.GetFromJsonAsync<ICollection<string>>("api/watchlists/" + GetUserName());
 
 		if(newWatchlist != null){
 			TrackedTickers = newWatchlist;

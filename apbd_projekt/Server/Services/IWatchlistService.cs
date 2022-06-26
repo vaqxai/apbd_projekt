@@ -2,14 +2,14 @@
 {
     public interface IWatchlistService
     {
-        public Task<ICollection<string>> getWatchlist(string userEmail);
+        public ICollection<string> GetWatchlist(string userEmail);
 
-        public Task<bool> isInWatchlist(string userEmail, string ticker);
+        public bool IsInWatchlist(string userEmail, string ticker);
 
-        public Task addToWatchlist(string userEmail, string ticker);
+        public Task AddToWatchlist(string userEmail, string ticker);
 
-        public Task<bool> hasWatchlist(string userEmail);
+        public bool HasWatchlist(string userEmail);
 
-        public Task removeFromWatchlist(string userEmail, string ticker);
+        public Task RemoveFromWatchlist(string userEmail, string ticker);
     }
 }

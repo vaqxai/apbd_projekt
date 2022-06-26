@@ -100,25 +100,39 @@ else
 
 	}
 
+	private async Task<string> GetUserName()
+	{
+		var identity = (await asp.GetAuthenticationStateAsync()).User.Identity;
+
+		if(identity == null || identity.Name == null){
+			ErrorMessage = "You must be logged in to add to your watchlist";
+			DisplayError = true;
+			StateHasChanged();
+			return "";
+		}
+
+		return identity.Name;
+	}
+
 	public async Task AddToWatchlist(string ticker)
 	{
-		var user = (await asp.GetAuthenticationStateAsync()).User.Identity.Name;
+		var user = GetUserName();
 
 		await Http.PostAsync($"api/watchlists/{user}/{ticker}", null);
-		UpdateWatchlist();
+		await UpdateWatchlist();
 	}
 
 	public async Task RemoveFromWatchlist(string ticker)
 	{
-		var user = (await asp.GetAuthenticationStateAsync()).User.Identity.Name;
+		var user = GetUserName();
 
 		await Http.DeleteAsync($"api/watchlists/{user}/{ticker}");
-		UpdateWatchlist();
+		await UpdateWatchlist();
 	}
 
 	public async Task UpdateWatchlist()
 	{
-		var newWatchlist = await Http.GetFromJsonAsync<ICollection<string>>("api/watchlists/" + (await asp.GetAuthenticationStateAsync()).User.Identity.Name);
+		var newWatchlist = await Http.GetFromJsonAsync<ICollection<string>>("api/watchlists/" + GetUserName());
 
 		if(newWatchlist != null){
 			Watchlist = newWatchlist;
