@@ -20,17 +20,17 @@ namespace apbd_projekt.Server.Controllers
         {
             try
             {
-                if (!await _service.hasWatchlist(userEmail))
+                if (!_service.HasWatchlist(userEmail))
                 {
                     return NotFound("user has no watchlist");
                 }
-                else if(!await _service.isInWatchlist(userEmail, ticker))
+                else if(!_service.IsInWatchlist(userEmail, ticker))
                 {
                     return NotFound("there's no such ticker in user's watchlist");
                 }
                 else
                 {
-                    await _service.removeFromWatchlist(userEmail, ticker);
+                    await _service.RemoveFromWatchlist(userEmail, ticker);
                     return Ok();
                 }
             
@@ -46,17 +46,17 @@ namespace apbd_projekt.Server.Controllers
         }
 
         [HttpGet("{userEmail}")]
-        public async Task<IActionResult> GetWatchlist(string userEmail)
+        public IActionResult GetWatchlist(string userEmail)
         {
             try
             {
-                if(!await _service.hasWatchlist(userEmail))
+                if(!_service.HasWatchlist(userEmail))
                 {
                     return NotFound("No watchlist found");
                 }
                 
                 Console.Out.WriteLine("Request accepted");
-                var watchlist = await _service.getWatchlist(userEmail);
+                var watchlist = _service.GetWatchlist(userEmail);
                 return Ok(watchlist);
             }
             catch (HttpRequestException e)
@@ -74,13 +74,13 @@ namespace apbd_projekt.Server.Controllers
         {
             try
             {
-                if (await _service.isInWatchlist(userEmail, ticker))
+                if (_service.IsInWatchlist(userEmail, ticker))
                 {
                     return BadRequest("Ticker is already in watchlist");
                 }
                 else
                 {
-                    await _service.addToWatchlist(userEmail, ticker);
+                    await _service.AddToWatchlist(userEmail, ticker);
                     return Ok();
                 }
             }
