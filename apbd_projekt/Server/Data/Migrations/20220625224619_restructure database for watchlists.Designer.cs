@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using apbd_projekt.Server.Data;
 
@@ -11,9 +12,10 @@ using apbd_projekt.Server.Data;
 namespace apbd_projekt.Server.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20220625224619_restructure database for watchlists")]
+    partial class restructuredatabaseforwatchlists
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -176,8 +178,8 @@ namespace apbd_projekt.Server.Data.Migrations
                     b.Property<double>("Open")
                         .HasColumnType("float");
 
-                    b.Property<double>("Volume")
-                        .HasColumnType("float");
+                    b.Property<int>("Volume")
+                        .HasColumnType("int");
 
                     b.HasKey("Ticker", "Date");
 

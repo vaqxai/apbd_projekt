@@ -53,7 +53,7 @@ namespace apbd_projekt.Server.Services
 
         public async Task<bool> isSearchCached(string tickerPart)
         {
-            if (await _context.CachedSearches.FirstOrDefaultAsync(cs => cs.SearchTerm == tickerPart) != null) // could also only search for non-expired cached search results
+            if (await _context.CachedStockSearches.FirstOrDefaultAsync(cs => cs.SearchTerm == tickerPart) != null) // could also only search for non-expired cached search results
             {
                 if ((await getCachedSearch(tickerPart)).GetAge() <= MAX_CACHED_AGE)
                 {
@@ -73,7 +73,7 @@ namespace apbd_projekt.Server.Services
 
         public async Task<CachedStockSearch> getCachedSearch(string tickerPart)
         {
-            return await _context.CachedSearches.Include(cs => cs.SearchResult).FirstOrDefaultAsync(cs => cs.SearchTerm == tickerPart);
+            return await _context.CachedStockSearches.Include(cs => cs.SearchResult).FirstOrDefaultAsync(cs => cs.SearchTerm == tickerPart);
         }
 
         public async Task saveSearchResultToCache(string searchTerm, ICollection<CachedSimpleStock> searchResult)
@@ -87,11 +87,11 @@ namespace apbd_projekt.Server.Services
                 CreatedOn = DateTime.Now
             };
 
-            await _context.CachedSearches.AddAsync(cachedSearch);
+            await _context.CachedStockSearches.AddAsync(cachedSearch);
 
             foreach (CachedSimpleStock ss in searchResult) // this prevents collisions when our new cached search contains simplestocks which are already cached (should they also have their own expiries?)
             {
-                var fromCache = await _context.StockStumps.FirstOrDefaultAsync(sc => sc.Ticker == ss.Ticker);
+                var fromCache = await _context.SimpleStocks.FirstOrDefaultAsync(sc => sc.Ticker == ss.Ticker);
                 if ( fromCache != null)
                 {
                     srwcs.Add(fromCache);
@@ -126,20 +126,20 @@ namespace apbd_projekt.Server.Services
         {
             // first remove all deceased stocks which used this search term (in ticker or in company name)
             
-            var cachedSimpleStocks = from css in _context.StockStumps.AsEnumerable() // prevent query from being translated to sql immediately
+            var cachedSimpleStocks = from css in _context.SimpleStocks.AsEnumerable() // prevent query from being translated to sql immediately
                                      where css.Ticker.Contains(searchTerm) || css.Name.Contains(searchTerm) &&
                                      (css.GetAge() > MAX_CACHED_AGE || css.GetAge() < 0) // "< 0" to protect against integer overflow
                                      select css;
 
-            _context.StockStumps.RemoveRange(cachedSimpleStocks);
+            _context.SimpleStocks.RemoveRange(cachedSimpleStocks);
 
             // then remove all cached searches where the deceased stocks were used
 
-            var cachedSearches = from cs in _context.CachedSearches
+            var cachedSearches = from cs in _context.CachedStockSearches
                                  where cs.SearchResult.Any(ccs => cachedSimpleStocks.Contains(ccs))
                                  select cs;
 
-            _context.CachedSearches.RemoveRange(cachedSearches);
+            _context.CachedStockSearches.RemoveRange(cachedSearches);
             
             // finally, save all changes
 
@@ -148,7 +148,7 @@ namespace apbd_projekt.Server.Services
 
         public async Task removeSearchResultFromCache(string searchTerm)
         {
-            var cachedResult = await _context.CachedSearches.FirstOrDefaultAsync(cs => cs.SearchTerm == searchTerm);
+            var cachedResult = await _context.CachedStockSearches.FirstOrDefaultAsync(cs => cs.SearchTerm == searchTerm);
             if(cachedResult != null)
             {
                 _context.Remove(cachedResult);
@@ -192,22 +192,30 @@ namespace apbd_projekt.Server.Services
 
         public async Task<bool> isCached(string ticker)
         {
+            Console.Out.WriteLine("Checking if stock is cached");
             if (await _context.Stocks.FirstOrDefaultAsync(s => s.Ticker == ticker) != null)
             {
+                Console.Out.WriteLine("Inside check");
                 if ((await getCachedStock(ticker)).GetAge() <= MAX_CACHED_AGE)
                 {
+                    Console.Out.WriteLine("STOCK IS CACHED");
                     return true; // cached and not expired
                 }
                 else
                 {
+                    Console.Out.WriteLine("STOCK IS CACHED BUT NEEDS UPDATING");
                     await UpdateCached(ticker); // cached but expired, we'll update it straight away
                     return true;
                 }
+                Console.Out.WriteLine("NO EVENT FIRED?");
             }
             else
             {
                 return false; // not cached
+                Console.Out.WriteLine("STOCK IS NOT CACHED");
             }
+
+            Console.Out.WriteLine("SOMETHING ELSE HAPPENED");
         }
 
         public async Task removeDeceasedCachedStocks(string ticker)
@@ -261,7 +269,7 @@ namespace apbd_projekt.Server.Services
             {
                 dateFromStr = stock.StockDays.OrderBy(sd => sd.Date).Last().Date.AddDays(1).ToString("yyyy-MM-dd");
 
-                if (stock.StockDays.OrderBy(sd => sd.Date).Last().Date.Date == dateTo.Date) // stop doing everything if we're already up to date
+                if ((stock.StockDays.OrderBy(sd => sd.Date).Last().Date.Date - dateTo.Date).TotalDays < 3) // stop doing everything if we're already up to date (huge offset b/c of exchanges opening closing etc. we want to minimize api calls)
                 {
                     return stock.StockDays;
                 }
@@ -292,7 +300,7 @@ namespace apbd_projekt.Server.Services
                     High = (double)stockDay["h"],
                     Low = (double)stockDay["l"],
                     Close = (double)stockDay["c"],
-                    Volume = (int)stockDay["v"],
+                    Volume = (double)stockDay["v"],
                     Date = DateTimeOffset.FromUnixTimeMilliseconds((long)stockDay["t"]).DateTime
                 };
 

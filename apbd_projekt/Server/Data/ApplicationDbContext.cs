@@ -20,13 +20,17 @@ namespace apbd_projekt.Server.Data
         {
             base.OnModelCreating(mb);
             mb.Entity<StockDay>().HasKey(sd => new { sd.Ticker, sd.Date });
+            mb.Entity<Watchlist>().HasKey(wl => new { wl.Ticker, wl.UserEmail });
+            
         }
-
-        public DbSet<CachedSimpleStock> StockStumps { get; set; }
-        public DbSet<CachedStockSearch> CachedSearches { get; set; }
+        
+        public DbSet<CachedSimpleStock> SimpleStocks { get; set; }
+        public DbSet<CachedStockSearch> CachedStockSearches { get; set; }
 
         public DbSet<Stock> Stocks { get; set; }
         public DbSet<StockDay> StockDays { get; set; }
+
+        public DbSet<Watchlist> Watchlists { get; set; }
 
     }
 }

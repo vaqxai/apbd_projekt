@@ -25,6 +25,7 @@ builder.Services.AddAuthentication()
     .AddIdentityServerJwt();
 
 builder.Services.AddScoped<IStocksService, StocksService>();
+builder.Services.AddScoped<IWatchlistService, WatchlistService>();
 
 JsonSerializerOptions jsonSerializerOptions = new() { 
     ReferenceHandler = ReferenceHandler.Preserve,

@@ -109,6 +109,6 @@ namespace apbd_projekt.Server.Controllers
                     _ => Problem(e.Message),
                 };
             }
-		}            
+		}
 	}
 }
