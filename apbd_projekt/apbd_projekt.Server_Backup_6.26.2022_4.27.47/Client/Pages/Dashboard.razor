@@ -1,0 +1,61 @@
+﻿@page "/"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using apbd_projekt.Shared
+@attribute [Authorize]
+@inject HttpClient Http
+
+<PageTitle>TickersApp - Dashboard</PageTitle>
+
+<div class="container" style="margin-bottom:1%;">
+
+	<div class="d-flex justify-content-between align-items-end">
+		<div class="">
+			@if(!IsWatchlistOpen)
+			{
+				<h1>Dashboard</h1>
+				<p>Here you can see stock info and add tickers to your watchlist</p>
+			} else
+			{
+				<h1>Watchlist</h1>
+				<p>Here are all your tracked stocks</p>
+			}
+
+		</div>
+		<div class="pb-4">
+			@if (!IsWatchlistOpen)
+			{
+				<button class="btn btn-primary" @onclick="@((e) => {OpenWatchlist();})">Watchlist</button>
+			}else
+			{
+				<button class="btn btn-secondary" @onclick="@((e) => {CloseWatchlist();})">Return</button>	
+			}
+
+		</div>
+	</div>
+
+	@if(!IsWatchlistOpen)
+	{
+		<SearchBar />
+	}
+
+	else
+	{
+		<Watchlist />
+	}
+
+</div>
+
+@code {
+	public bool IsWatchlistOpen { get; set; }
+
+	public void OpenWatchlist()
+	{
+		IsWatchlistOpen = true;
+	}
+
+	public void CloseWatchlist()
+	{
+		IsWatchlistOpen = false;
+	}
+}

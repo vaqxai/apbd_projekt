@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Syncfusion.Blazor" Version="20.1.0.61"/>
+    <PackageReference Include="Syncfusion.Blazor" Version="20.1.0.61" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="6.0.4" />
   </ItemGroup>
 

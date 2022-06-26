@@ -1,0 +1,136 @@
+﻿@inject HttpClient Http
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using apbd_projekt.Shared
+@attribute [Authorize]
+@inject AuthenticationStateProvider asp
+
+<div class="btn-toolbar" role="toolbar">
+	@if(TrackedStocks.Count > ItemsOnPage)
+	{
+	<div class="btn-group" role="group">
+		@for(int i=0;i<(int)Math.Ceiling((double)TrackedStocks.Count / ItemsOnPage); i++)
+		{
+			@if (i == Page)
+			{
+				<button type="button" class="btn btn-primary active">@(i+1)</button>
+			}
+
+			else
+			{
+				var t_i = i;
+				<button type="button" @onclick="@(e=>{Page=t_i;})" class="btn btn-primary">@(i+1)</button>
+			}
+		}
+	</div>	
+	}
+
+	<div class="btn-group ps-1" role="group">
+		<button id="sortingDropdown" type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+			Sorting
+		</button>
+		<ul class="dropdown-menu" aria-labelledby="sortingDropdown">
+			<li><a class="dropdown-item" @onclick="@(e=>{SortingBy="Ticker";})">Ticker</a></li>
+			<li><a class="dropdown-item" @onclick="@(e=>{SortingBy="CompanyName";})">Company Name</a></li>
+			<li><a class="dropdown-item" @onclick="@(e=>{SortingBy="Industry";})">Industry</a></li>
+		</ul>
+		@if (!SortingMode)
+		{
+			<button type="button" class="btn btn-secondary active" @onclick="@(e => {SortingMode = false;})">▼</button>
+			<button type="button" class="btn btn-secondary" @onclick="@(e => {SortingMode = true;})">▲</button>			
+		}else
+		{
+			<button type="button" class="btn btn-secondary" @onclick="@(e => {SortingMode = false;})">▼</button>
+			<button type="button" class="btn btn-secondary active" @onclick="@(e => {SortingMode = true;})">▲</button>	
+		}
+
+	</div>
+</div>
+
+
+<div class="d-flex flex-wrap py-2">
+
+	@for (int i=Page*ItemsOnPage;i<Math.Min(TrackedStocks.Count, Page*ItemsOnPage+ItemsOnPage);i++)
+	{
+		var sorted = getSortedStocks();
+		var t_i = i;
+		<div class="pe-1" style="max-width:33%;">
+			<StockCard FullStock=@sorted.ElementAt(t_i) >
+				<btn class="btn btn-danger" @onclick="@(async e=>{await RemoveFromWatchlist(sorted.ElementAt(t_i).Ticker);})">Remove from Watchlist</btn>
+			</StockCard>
+		</div>
+	}
+</div>
+
+
+@code {
+
+	public ICollection<string> TrackedTickers { get; set; } = new List<string>();
+	public ICollection<Stock> TrackedStocks { get; set; } = new List<Stock>();
+	public bool SortingMode { get; set; } = true; // false = desc, true = asc
+	public string SortingBy { get; set; } = "Ticker";
+	public int Page { get; set; } = 0;
+	public static int ItemsOnPage = 3; // move to appsettings?
+
+	// TODO: Don't duplicate methods
+
+	protected override async Task OnInitializedAsync()
+	{
+		await UpdateWatchlist();
+	}
+
+	public ICollection<Stock> getSortedStocks()
+	{
+		var sortedStocks = this.TrackedStocks.OrderBy(x => x.GetType().GetProperty(SortingBy).GetValue(x)).ToList();
+		if (!SortingMode)
+		{
+			sortedStocks.Reverse();
+		}
+		return sortedStocks;
+	}
+
+	public async Task AddToWatchlist(string ticker)
+	{
+		var user = (await asp.GetAuthenticationStateAsync()).User.Identity.Name;
+
+		await Http.PostAsync($"api/watchlists/{user}/{ticker}", null);
+		await UpdateWatchlist();
+	}
+
+	public async Task RemoveFromWatchlist(string ticker)
+	{
+		var user = (await asp.GetAuthenticationStateAsync()).User.Identity.Name;
+
+		await Http.DeleteAsync($"api/watchlists/{user}/{ticker}");
+		await UpdateWatchlist();
+	}
+
+	public async Task UpdateWatchlist()
+	{
+		var newWatchlist = await Http.GetFromJsonAsync<ICollection<string>>("api/watchlists/" + (await asp.GetAuthenticationStateAsync()).User.Identity.Name);
+
+		if(newWatchlist != null){
+			TrackedTickers = newWatchlist;
+
+			TrackedStocks = new List<Stock>();
+			foreach(var ticker in TrackedTickers)
+			{
+				TrackedStocks.Add(await FetchStockAsync(ticker));
+			}
+
+			StateHasChanged();
+		}
+	}
+
+	public async Task<Stock> FetchStockAsync(string ticker)
+	{
+		var stock = await Http.GetFromJsonAsync<Stock>("api/stocks/stock?ticker=" + ticker);
+
+		if(stock == null)
+		{
+			throw new Exception("stock with supplied ticker not found in backend");
+		}
+
+		return stock;
+	}
+}

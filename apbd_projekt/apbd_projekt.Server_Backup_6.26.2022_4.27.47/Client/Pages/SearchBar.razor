@@ -1,0 +1,203 @@
+﻿@inject HttpClient Http
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using apbd_projekt.Shared
+@attribute [Authorize]
+@inject AuthenticationStateProvider asp	
+
+<div class="input-group mb-3">
+	<span class="input-group-text" id="basic-addon1">Search</span>
+	<input 
+		type="text"
+		@bind="@CurrentValue"
+		@onclick="@((e) => { EmptySearchField(); })" @oninput="@(async (e) => {
+			if(e.Value != null)
+				await ProcessValueEntry((string) e.Value); 
+		})"
+		class="form-control"
+		id="input_ticker"
+		placeholder="Company Symbol"
+	>
+</div>
+
+@if(DisplayError)
+{
+	<div class="alert alert-danger" role="alert">
+		@ErrorMessage
+	</div>
+}
+
+@if (DisplayTickerDetails)
+{
+	<div class="row">
+		<div class="btn-group float-start" style="margin-bottom:1%; width:auto;">
+			@if (Watchlist.Contains(CurrentlyDisplayedStock.Ticker))
+			{
+				<button class="btn btn-group btn-danger" @onclick="@(async (e) => {await RemoveFromWatchlist(CurrentlyDisplayedStock.Ticker);})">Remove from Watchlist</button>
+			}
+			else
+			{
+				<button class="btn btn-group btn-primary" @onclick="@(async (e) => {await AddToWatchlist(CurrentlyDisplayedStock.Ticker);})">Add to Watchlist</button>
+			}
+			<button class="btn btn-group btn-md btn-secondary" @onclick="@((e) => { StopDisplayingTickerDetails(); })">Return</button>
+		</div>
+
+		<div class="float-start">
+			<StockDetails stockSearchResult="@CurrentlyDisplayedStock"/>
+		</div>
+	</div>
+}
+else
+{
+<div class="list-group">
+		@if (Stocks != null)
+		{
+			@if (CurrentValue.Count() > 0 && Stocks.Count > 0)
+			{
+				@foreach (var gameText in (from stock in Stocks where stock.Ticker.ToLower().Contains(CurrentValue.ToLower()) || stock.Name.ToLower().Contains(CurrentValue.ToLower()) select stock.Ticker).ToList())
+				{
+					<a type="button" class="list-group-item list-group-item-action" @onclick="@((e) => { DoDisplayTickerDetails(gameText); })"> <span class="badge bg-secondary col-md-1"> @gameText </span> <span class="col-md-1">@GetStockQuickInfo(gameText)</span> </a>
+				}
+			}
+		}
+	</div>
+}
+
+
+@code {
+
+	#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+
+	public bool DisplayTickerDetails = false;
+	public bool DisplayError = false;
+	public string ErrorMessage = "";
+	public ICollection<SimpleStock>? Stocks { get; set; }
+	public ICollection<string> Watchlist { get; set; } = new List<string>();
+	public SimpleStock CurrentlyDisplayedStock;
+	public string CurrentValue = "";
+
+	public void EmptySearchField()
+	{
+		CurrentValue = "";
+		Stocks = null; // reset list
+		StopDisplayingTickerDetails();
+	}
+
+	public async Task ProcessValueEntry(string newVal)
+	{
+		if(DisplayTickerDetails)
+		{
+			StopDisplayingTickerDetails();
+		}
+
+		CurrentValue = newVal;
+
+		if(newVal.Count() >= 1) 
+		{
+			Stocks = await FetchTickers(newVal);
+			StateHasChanged();
+		}
+
+	}
+
+	public async Task AddToWatchlist(string ticker)
+	{
+		var user = (await asp.GetAuthenticationStateAsync()).User.Identity.Name;
+
+		await Http.PostAsync($"api/watchlists/{user}/{ticker}", null);
+		UpdateWatchlist();
+	}
+
+	public async Task RemoveFromWatchlist(string ticker)
+	{
+		var user = (await asp.GetAuthenticationStateAsync()).User.Identity.Name;
+
+		await Http.DeleteAsync($"api/watchlists/{user}/{ticker}");
+		UpdateWatchlist();
+	}
+
+	public async Task UpdateWatchlist()
+	{
+		var newWatchlist = await Http.GetFromJsonAsync<ICollection<string>>("api/watchlists/" + (await asp.GetAuthenticationStateAsync()).User.Identity.Name);
+
+		if(newWatchlist != null){
+			Watchlist = newWatchlist;
+			StateHasChanged();
+		}
+
+	}
+
+	public SimpleStock GetStockObject(string ticker)
+	{
+		if(Stocks != null)
+		{
+			var stock = Stocks.FirstOrDefault(s => s.Ticker == ticker);
+			if (stock == null)
+			{
+				throw new Exception("Stock object not found");
+			}
+			return stock;
+		} else
+		{
+			throw new Exception("Stocks list is null");
+		}
+
+	}
+
+	public string GetStockQuickInfo(string ticker)
+	{
+		var stock = GetStockObject(ticker);
+		return stock.Name + " (" + stock.PrimaryExchange + ")";
+	}
+
+	public void DoDisplayTickerDetails(string ticker)
+	{
+		DisplayTickerDetails = true;
+		CurrentlyDisplayedStock = GetStockObject(ticker);
+	}
+
+	public void StopDisplayingTickerDetails()
+	{
+		DisplayTickerDetails = false;
+	}
+
+	protected override async Task OnInitializedAsync()
+	{
+		await UpdateWatchlist();
+	}
+
+	public async Task<ICollection<SimpleStock>> FetchTickers(string tickerPart)
+	{
+		try
+		{
+			var tickers = await Http.GetFromJsonAsync<SimpleStock[]>("api/stocks/search?query=" + tickerPart);
+
+			if (tickers == null)
+			{
+				return new List<SimpleStock>(); // empty list if nothing found
+			}
+
+			DisplayError = false;
+			return tickers;
+		} catch (HttpRequestException e)
+		{
+			switch(e.StatusCode)
+			{
+				case System.Net.HttpStatusCode.NotFound:
+					DisplayError = true;
+					ErrorMessage = "No stocks found";
+					break;
+				case System.Net.HttpStatusCode.TooManyRequests:
+					DisplayError = true;
+					ErrorMessage = "The external API is overloaded, try again in a moment.";
+					break;
+				default:
+					DisplayError = true;
+					ErrorMessage = "Unknown error";
+					break;
+			}
+			
+			return new List<SimpleStock>(); // empty list if error
+		}
+	}
+}

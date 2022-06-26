@@ -1,0 +1,50 @@
+﻿@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using apbd_projekt.Shared
+@attribute [Authorize]
+
+<div class="card">
+	@if(FullStock != null)
+	{
+		<!-- Okay, needing the api key just to pull the logo from their website is bullshit, also because it's visible from the frontend, and this entire thing -->
+		@if(FullStock.LogoURL != null)
+		{
+			<img src="@FullStock.LogoURL?apiKey=Tnp2_HTpZRIDK2Jcrppho5lLwn1tUqI7" class="card-img-top" style="max-width:8rem; margin:auto; margin-top: 1rem; "/>		
+		}
+		<!-- Should be another backend request, to hide the API Key -->
+		<!-- Todo: Devise a way to hide the api key here -->
+		<div class="card-body">
+			@if(FullStock.CompanyName != null)
+			{
+				<h5 class="card-title">@FullStock.CompanyName</h5>				
+			}
+			@if(FullStock.Ticker != null)
+			{
+				<p class="card-text">@FullStock.Ticker</p>				
+			}
+			@if(FullStock.Industry != null)
+			{
+				<p class="card-text">@FullStock.Industry</p>				
+			}
+			@if(FullStock.Description != null)
+			{
+				<p class="card-text">@FullStock.Description</p>				
+			}
+			@if(FullStock.Country != null)
+			{
+				<p class="card-text">@(FullStock.Country.ToUpper())</p>		
+			}
+			@ChildContent
+		</div>	
+	}
+</div>
+
+@code {
+	#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+
+	[Parameter]
+	public Stock FullStock { get; set; }
+
+	[Parameter]
+	public RenderFragment ChildContent { get; set; }
+}

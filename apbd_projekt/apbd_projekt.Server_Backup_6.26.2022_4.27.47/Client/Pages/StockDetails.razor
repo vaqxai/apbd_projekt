@@ -1,0 +1,48 @@
+﻿@inject HttpClient Http
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using apbd_projekt.Shared
+@attribute [Authorize]
+
+<div class="row">
+	@if(FullStock == null){
+		<div class="alert alert-info">Loading</div>
+	} else
+	{
+		<div class="col-md-4">
+			<StockCard fullstock=@FullStock/>
+		</div>
+		<div class="col">
+			@if(FullStock != null && FullStock.StockDays != null)
+			{
+				<StockGraph stockdays="@FullStock.StockDays"/>
+			}
+		</div>		
+	}
+
+</div>
+
+@code {
+	#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+
+	[Parameter]
+	public SimpleStock stockSearchResult { get; set; }
+
+	public Stock FullStock { get; set; }
+
+	public async Task<Stock> FetchStockAsync(string ticker)
+	{
+		var stock = await Http.GetFromJsonAsync<Stock>("api/stocks/stock?ticker=" + ticker);
+
+		if(stock == null)
+		{
+			throw new Exception("stock with supplied ticker not found in backend");
+		}
+
+		return stock;
+	}
+
+	protected override async Task OnInitializedAsync(){
+		FullStock = await FetchStockAsync(stockSearchResult.Ticker);		
+	}
+}
