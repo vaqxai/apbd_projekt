@@ -5,66 +5,79 @@
 @attribute [Authorize]
 @inject AuthenticationStateProvider asp
 
-<div class="btn-toolbar" role="toolbar">
-	@if(TrackedStocks.Count > ItemsOnPage)
-	{
-	<div class="btn-group" role="group">
-		@for(int i=0;i<(int)Math.Ceiling((double)TrackedStocks.Count / ItemsOnPage); i++)
+@if (DetailsMode)
+{
+	<button class="btn btn-secondary mb-2" @onclick="@(e => { HideDetails(); })">Hide Details</button>
+	<StockDetails fullstock=@(TrackedStocks.First(ts => ts.Ticker == DetailsTicker))/>
+}
+else
+{
+	<div class="btn-toolbar" role="toolbar">
+		@if(TrackedStocks.Count > ItemsOnPage)
 		{
-			@if (i == Page)
+		<div class="btn-group" role="group">
+			@for(int i=0;i<(int)Math.Ceiling((double)TrackedStocks.Count / ItemsOnPage); i++)
 			{
-				<button type="button" class="btn btn-primary active">@(i+1)</button>
-			}
+				@if (i == Page)
+				{
+					<button type="button" class="btn btn-primary active">@(i+1)</button>
+				}
 
-			else
-			{
-				var t_i = i;
-				<button type="button" @onclick="@(e=>{Page=t_i;})" class="btn btn-primary">@(i+1)</button>
+				else
+				{
+					var t_i = i;
+					<button type="button" @onclick="@(e=>{Page=t_i;})" class="btn btn-primary">@(i+1)</button>
+				}
 			}
-		}
-	</div>	
-	}
-
-	<div class="btn-group ps-1" role="group">
-		<button id="sortingDropdown" type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-			Sorting
-		</button>
-		<ul class="dropdown-menu" aria-labelledby="sortingDropdown">
-			<li><a class="dropdown-item" @onclick="@(e=>{SortingBy="Ticker";})">Ticker</a></li>
-			<li><a class="dropdown-item" @onclick="@(e=>{SortingBy="CompanyName";})">Company Name</a></li>
-			<li><a class="dropdown-item" @onclick="@(e=>{SortingBy="Industry";})">Industry</a></li>
-		</ul>
-		@if (!SortingMode)
-		{
-			<button type="button" class="btn btn-secondary active" @onclick="@(e => {SortingMode = false;})">▼</button>
-			<button type="button" class="btn btn-secondary" @onclick="@(e => {SortingMode = true;})">▲</button>			
-		}else
-		{
-			<button type="button" class="btn btn-secondary" @onclick="@(e => {SortingMode = false;})">▼</button>
-			<button type="button" class="btn btn-secondary active" @onclick="@(e => {SortingMode = true;})">▲</button>	
+		</div>	
 		}
 
-	</div>
-</div>
+		<div class="btn-group ps-1" role="group">
+			<button id="sortingDropdown" type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+				Sorting
+			</button>
+			<ul class="dropdown-menu" aria-labelledby="sortingDropdown">
+				<li><a class="dropdown-item" @onclick="@(e=>{SortingBy="Ticker";})">Ticker</a></li>
+				<li><a class="dropdown-item" @onclick="@(e=>{SortingBy="CompanyName";})">Company Name</a></li>
+				<li><a class="dropdown-item" @onclick="@(e=>{SortingBy="Industry";})">Industry</a></li>
+			</ul>
+			@if (!SortingMode)
+			{
+				<button type="button" class="btn btn-secondary active" @onclick="@(e => {SortingMode = false;})">▼</button>
+				<button type="button" class="btn btn-secondary" @onclick="@(e => {SortingMode = true;})">▲</button>			
+			}else
+			{
+				<button type="button" class="btn btn-secondary" @onclick="@(e => {SortingMode = false;})">▼</button>
+				<button type="button" class="btn btn-secondary active" @onclick="@(e => {SortingMode = true;})">▲</button>	
+			}
 
-
-<div class="d-flex flex-wrap py-2">
-
-	@for (int i=Page*ItemsOnPage;i<Math.Min(TrackedStocks.Count, Page*ItemsOnPage+ItemsOnPage);i++)
-	{
-		var sorted = getSortedStocks();
-		var t_i = i;
-		<div class="pe-1" style="max-width:33%;">
-			<StockCard FullStock=@sorted.ElementAt(t_i) >
-				<btn class="btn btn-danger" @onclick="@(async e=>{await RemoveFromWatchlist(sorted.ElementAt(t_i).Ticker);})">Remove from Watchlist</btn>
-			</StockCard>
 		</div>
-	}
-</div>
+	</div>
+
+
+	<div class="d-flex flex-wrap py-2">
+
+		@for (int i=Page*ItemsOnPage;i<Math.Min(TrackedStocks.Count, Page*ItemsOnPage+ItemsOnPage);i++)
+		{
+			var sorted = getSortedStocks();
+			var tI = i;
+			<div class="pe-1" style="max-width:33%;">
+				<StockCard FullStock=@sorted.ElementAt(tI) style="height: 36rem;">
+					<div class="card-footer">
+						<btn class="btn btn-danger" @onclick="@(async e => { await RemoveFromWatchlist(sorted.ElementAt(tI).Ticker); })">Remove from Watchlist</btn>
+						<btn class="btn btn-primary" @onclick="@(e => { ShowDetails(sorted.ElementAt(tI).Ticker); })">Show Details</btn>
+					</div>
+				</StockCard>
+			</div>
+		}
+	</div>
+}
 
 
 @code {
 
+	public bool DetailsMode { get; set; } = false;
+	public string DetailsTicker { get; set; } = "";
 	public ICollection<string> TrackedTickers { get; set; } = new List<string>();
 	public ICollection<Stock> TrackedStocks { get; set; } = new List<Stock>();
 	public bool SortingMode { get; set; } = true; // false = desc, true = asc
@@ -90,6 +103,20 @@
 		await UpdateWatchlist();
 	}
 
+	public void ShowDetails(string ticker)
+	{
+		DetailsMode = true;
+		DetailsTicker = ticker;
+		StateHasChanged();
+	}
+
+	public void HideDetails()
+	{
+		DetailsMode = false;
+		DetailsTicker = "";
+		StateHasChanged();
+	}
+
 	public ICollection<Stock> getSortedStocks()
 	{
 		var prop = typeof(Stock).GetProperty(SortingBy);
@@ -110,7 +137,7 @@
 
 	public async Task AddToWatchlist(string ticker)
 	{
-		var user = GetUserName();
+		var user = await GetUserName();
 
 		await Http.PostAsync($"api/watchlists/{user}/{ticker}", null);
 		await UpdateWatchlist();
@@ -118,7 +145,7 @@
 
 	public async Task RemoveFromWatchlist(string ticker)
 	{
-		var user = GetUserName();
+		var user = await GetUserName();
 
 		await Http.DeleteAsync($"api/watchlists/{user}/{ticker}");
 		await UpdateWatchlist();
@@ -126,18 +153,31 @@
 
 	public async Task UpdateWatchlist()
 	{
-		var newWatchlist = await Http.GetFromJsonAsync<ICollection<string>>("api/watchlists/" + GetUserName());
+		try
+		{
+			var newWatchlist = await Http.GetFromJsonAsync<ICollection<string>>("api/watchlists/" + await GetUserName());
 
-		if(newWatchlist != null){
-			TrackedTickers = newWatchlist;
-
-			TrackedStocks = new List<Stock>();
-			foreach(var ticker in TrackedTickers)
+			if (newWatchlist != null)
 			{
-				TrackedStocks.Add(await FetchStockAsync(ticker));
-			}
+				TrackedTickers = newWatchlist;
 
-			StateHasChanged();
+				TrackedStocks = new List<Stock>();
+				foreach (var ticker in TrackedTickers)
+				{
+					TrackedStocks.Add(await FetchStockAsync(ticker));
+				}
+
+				StateHasChanged();
+			}
+		} catch(HttpRequestException e)
+		{
+			switch (e.StatusCode)
+			{
+				case System.Net.HttpStatusCode.NotFound: // ignore empty watchlist
+					break;
+				default:
+					throw new HttpRequestException(e.Message, e); // rethrow otherwise
+			}
 		}
 	}
 

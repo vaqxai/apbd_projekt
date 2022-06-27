@@ -1,4 +1,7 @@
 ﻿using apbd_projekt.Server.Models;
+using apbd_projekt.Shared;
+using Stock = apbd_projekt.Server.Models.Stock;
+using StockDay = apbd_projekt.Server.Models.StockDay;
 
 namespace apbd_projekt.Server.Services
 {
@@ -48,6 +51,10 @@ namespace apbd_projekt.Server.Services
         public Task RemoveDeceasedCachedStocks(string ticker);
 
         public Task<ICollection<StockDay>> GetDayInfo(string ticker, int n);
+
+        // articles
+
+        public Task<ICollection<Article>> GetArticles(string ticker, int n);
 
     }
 }

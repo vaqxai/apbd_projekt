@@ -41,7 +41,7 @@ namespace apbd_projekt.Server.Services
 
         public async Task RemoveFromWatchlist(string userEmail, string ticker)
         {
-            if(IsInWatchlist(userEmail, ticker))
+            if(!IsInWatchlist(userEmail, ticker))
             {
                 return;
             }

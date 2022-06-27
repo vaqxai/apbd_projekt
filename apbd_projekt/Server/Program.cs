@@ -35,6 +35,8 @@ JsonSerializerOptions jsonSerializerOptions = new() {
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 
+var polygonApiKey = builder.Configuration["Stocks:PolygonAPIKey"];
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

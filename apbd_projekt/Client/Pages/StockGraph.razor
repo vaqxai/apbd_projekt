@@ -6,27 +6,20 @@
 @attribute [Authorize]
 
 
-<div class="card" style="height:100%; width:100%">
+<div class="card flex-grow-1" style="height: 100%;">
     @if(StockDays == null || StockDays.Count == 0)
     {
         <div class="alert alert-info">Loading</div>
     }else
     {
-        <div class="card-body" id="ControlRegion">
-            @try
-            {
-	            <SfStockChart Title="@Ticker" Theme="Theme.Bootstrap5" EnablePeriodSelector="true" EnableSelector="true">
-                <StockChartSeriesCollection>
-                    <StockChartSeries DataSource="@StockDays" Type="ChartSeriesType.Candle" XName="Date" YName="Open"
-                                      High="High" Low="Low" Open="Open" Close="Close" Volume="Volume" Name="Google">
-                    </StockChartSeries>
-                </StockChartSeriesCollection>
-                </SfStockChart>
-            } catch (NullReferenceException e)
-            {
-                Console.Out.WriteLine("Yu dun goofed up: " + e.Message);
-            }
-
+        <div class="card-body p-1" id="ControlRegion" style="margin: auto; height: 100%;">
+	        <SfStockChart Height="100%" Width="100%" Title="@Ticker" Theme="Theme.Bootstrap5" EnablePeriodSelector="true" EnableSelector="true">
+            <StockChartSeriesCollection>
+                <StockChartSeries DataSource="@StockDays" Type="ChartSeriesType.Candle" XName="Date" YName="Open"
+                                  High="High" Low="Low" Open="Open" Close="Close" Volume="Volume" Name="Google">
+                </StockChartSeries>
+            </StockChartSeriesCollection>
+            </SfStockChart>
         </div>        
     }
 

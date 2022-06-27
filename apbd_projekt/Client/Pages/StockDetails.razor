@@ -4,45 +4,68 @@
 @using apbd_projekt.Shared
 @attribute [Authorize]
 
-<div class="row">
-	@if(FullStock == null){
-		<div class="alert alert-info">Loading</div>
-	} else
-	{
-		<div class="col-md-4">
-			<StockCard fullstock=@FullStock/>
+
+@if(FullStock == null){
+	<div class="alert alert-info">Loading</div>
+}
+else
+{
+	<div class="row p-0">
+		<div class="pe-1 col-4">
+			<StockCard fullstock=@FullStock style="height: 30rem;"/>
 		</div>
-		<div class="col">
-			@if(FullStock != null && FullStock.StockDays != null && FullStock.StockDays.Count > 0)
+		<div class="ps-1 col-8" style="height: 30rem;">
+			@if (FullStock is {StockDays.Count: > 0 })
 			{
 				<StockGraph stockdays="@FullStock.StockDays"/>
 			}
-		</div>		
-	}
+		</div>
+	</div>
 
-</div>
+	<div class="row pt-2">
+		<div class="col">
+			<StockArticles ticker="@FullStock.Ticker"/>
+		</div>
+	</div>
+}
 
 @code {
 	#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 
 	[Parameter]
-	public SimpleStock stockSearchResult { get; set; }
+	public SimpleStock? StockSearchResult { get; set; }
 
-	public Stock FullStock { get; set; }
+	[Parameter]
+	public Stock? FullStock { get; set; }
 
 	public async Task<Stock> FetchStockAsync(string ticker)
 	{
-		var stock = await Http.GetFromJsonAsync<Stock>("api/stocks/stock?ticker=" + ticker);
-
-		if(stock == null)
+		try
 		{
-			throw new Exception("stock with supplied ticker not found in backend");
-		}
+			var stock = await Http.GetFromJsonAsync<Stock>("api/stocks/stock?ticker=" + ticker);
 
-		return stock;
+			if (stock == null)
+			{
+				throw new Exception("stock with supplied ticker not found in backend");
+			}
+
+			return stock;
+		} catch (HttpRequestException e)
+		{
+			switch(e.StatusCode)
+			{
+				// try again in 5 seconds if we're being rate-limited
+				case System.Net.HttpStatusCode.TooManyRequests:
+					// how bad is it that i have a double await?
+					return await await Task.Delay(5000).ContinueWith(t => FetchStockAsync(ticker));
+				default:
+					throw new HttpRequestException(e.Message, e); // rethrow otherwise
+			}
+		}
 	}
 
 	protected override async Task OnInitializedAsync(){
-		FullStock = await FetchStockAsync(stockSearchResult.Ticker);		
+		if(StockSearchResult is not null)
+			FullStock = await FetchStockAsync(StockSearchResult.Ticker);
 	}
 }

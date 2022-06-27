@@ -1,0 +1,85 @@
+﻿@inject HttpClient Http
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using apbd_projekt.Shared
+@using System.Net
+@attribute [Authorize]
+
+
+@if (Articles is null || Articles.Count == 0)
+{
+	<div class="alert alert-info">
+		Loading...
+	</div>
+}
+else
+{
+	<!-- it doesnt see accordion for some reason -->
+	@* ReSharper disable once UnknownCssClass *@
+	<div class="accordion" id="accordion-articles">
+		@{ _i = 0; }
+
+		@foreach (var article in Articles)
+		{
+			<div class="accordion-item">
+				<h2 class="accordion-header" id="headingArticle@(_i)">
+					<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseArticle@(_i)" aria-expanded="false" aria-controls="collapseArticle@(_i)">
+						@article.Title
+					</button>
+				</h2>
+				<div id="collapseArticle@(_i)" class="accordion-collapse collapse" aria-labelledby="headingArticle@(_i)" data-bs-parent="#accordion-articles">
+					<div class="accordion-body">
+						<p>@article.Content</p>
+						<a href="@article.Link" target="_blank">Read More</a>
+					</div>
+				</div>
+			</div>
+			_i++;
+		}
+	</div>
+}
+
+@code {
+
+	private int _i = 0;
+
+	[Parameter]
+	public string? Ticker { get; set; }
+
+	public ICollection<Article>? Articles { get; set; }
+
+	public async Task FetchArticles(string ticker)
+	{
+		try
+		{
+			var articles = await Http.GetFromJsonAsync<ICollection<Article>>("api/stocks/articles?ticker=" + Ticker + "&n=5");
+			if (articles is not null)
+			{
+				Articles = articles;
+			}
+			else
+			{
+				Articles = new List<Article>();
+			}
+		}
+		catch (HttpRequestException e)
+		{
+			switch (e.StatusCode)
+			{
+				case HttpStatusCode.NotFound:
+					Articles = new List<Article>();
+					break;
+				case HttpStatusCode.TooManyRequests:
+					await Task.Delay(5000).ContinueWith(async t => await FetchArticles(ticker)); // this may create a recursive cycle
+					break;
+				default:
+					throw new HttpRequestException(e.Message, e);
+			}
+		}
+	}
+
+	protected override async Task OnInitializedAsync()
+	{
+		if(Ticker is not null) await FetchArticles(Ticker);
+	}
+}

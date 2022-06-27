@@ -116,7 +116,7 @@ else
 
 	public async Task AddToWatchlist(string ticker)
 	{
-		var user = GetUserName();
+		var user = await GetUserName();
 
 		await Http.PostAsync($"api/watchlists/{user}/{ticker}", null);
 		await UpdateWatchlist();
@@ -124,7 +124,7 @@ else
 
 	public async Task RemoveFromWatchlist(string ticker)
 	{
-		var user = GetUserName();
+		var user = await GetUserName();
 
 		await Http.DeleteAsync($"api/watchlists/{user}/{ticker}");
 		await UpdateWatchlist();
@@ -132,11 +132,24 @@ else
 
 	public async Task UpdateWatchlist()
 	{
-		var newWatchlist = await Http.GetFromJsonAsync<ICollection<string>>("api/watchlists/" + GetUserName());
+		try
+		{
+			var newWatchlist = await Http.GetFromJsonAsync<ICollection<string>>("api/watchlists/" + await GetUserName());
 
-		if(newWatchlist != null){
-			Watchlist = newWatchlist;
-			StateHasChanged();
+			if (newWatchlist != null)
+			{
+				Watchlist = newWatchlist;
+				StateHasChanged();
+			}
+		} catch (HttpRequestException e)
+		{
+			switch (e.StatusCode)
+			{
+				case System.Net.HttpStatusCode.NotFound:
+					return; // user doesnt have watchlist yet, it's safe to ignore
+				default:
+					throw new HttpRequestException(e.Message, e); // rethrow otherwise
+			}
 		}
 
 	}

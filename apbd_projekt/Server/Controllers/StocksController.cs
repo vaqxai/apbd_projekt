@@ -1,4 +1,5 @@
-﻿using apbd_projekt.Server.Services;
+﻿using System.Text.Json.Nodes;
+using apbd_projekt.Server.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -22,8 +23,7 @@ namespace apbd_projekt.Server.Controllers
 		{
 			try
 			{
-				Console.Out.WriteLine("Request accepted");
-				if (await _service.IsSearchCached(query))
+                if (await _service.IsSearchCached(query))
 				{
 					var cachedResults = (await _service.GetCachedSearch(query)).SearchResult;
 
@@ -136,5 +136,25 @@ namespace apbd_projekt.Server.Controllers
                 };
             }
 		}
+
+        [HttpGet("articles")]
+        public async Task<IActionResult> GetArticles(string ticker, int n)
+        {
+
+            try
+            {
+                var articles = await _service.GetArticles(ticker, n);
+                return Ok(articles);
+            }
+            catch (HttpRequestException e)
+            {
+                return e.StatusCode switch
+                {
+                    System.Net.HttpStatusCode.NotFound => NotFound("The requested ticker could not be found"),
+                    System.Net.HttpStatusCode.TooManyRequests => StatusCode(429),// too many requests
+                    _ => Problem(e.Message),
+                };
+            }
+        }
 	}
 }

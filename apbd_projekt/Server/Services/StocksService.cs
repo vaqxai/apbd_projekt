@@ -1,8 +1,12 @@
-﻿using apbd_projekt.Server.Models;
+﻿using System.Net;
+using apbd_projekt.Server.Models;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using apbd_projekt.Server.Data;
+using apbd_projekt.Shared;
 using Microsoft.EntityFrameworkCore;
+using Stock = apbd_projekt.Server.Models.Stock;
+using StockDay = apbd_projekt.Server.Models.StockDay;
 
 namespace apbd_projekt.Server.Services
 {
@@ -12,12 +16,14 @@ namespace apbd_projekt.Server.Services
 
         private const int MAX_CACHED_AGE = 86400; // 1 day //TODO: Put this in appsettings.json
         private readonly ApplicationDbContext _context;
+        private readonly IConfiguration _config;
 
         //stock searches
 
-        public StocksService(ApplicationDbContext context)
+        public StocksService(ApplicationDbContext context, IConfiguration config)
         {
             _context = context;
+            _config = config;
         }
 
         public async Task<ICollection<CachedSimpleStock>> SearchByTickerPart(string tickerPart)
@@ -25,7 +31,7 @@ namespace apbd_projekt.Server.Services
             HttpClient Http = new();
             // TODO: Put api key somewhere else
             string Request = "https://api.polygon.io/v3/reference/tickers?";
-            Request += "&apiKey=Tnp2_HTpZRIDK2Jcrppho5lLwn1tUqI7";
+            Request += "&apiKey=" +_config["Stocks:PolygonAPIKey"];
             Request += "&active=true";
             Request += "&sort=ticker&order=asc&limit=10";
             Request += "&market=stocks";
@@ -268,7 +274,7 @@ namespace apbd_projekt.Server.Services
             }
 
             Request += dateFromStr + "/" + dateToStr;
-            Request += "?apiKey=Tnp2_HTpZRIDK2Jcrppho5lLwn1tUqI7";
+            Request += "?apiKey=" + _config["Stocks:PolygonAPIKey"];
 
             var resp = await httpClient.GetStreamAsync(Request);
             JsonNode data = await JsonSerializer.DeserializeAsync<JsonNode>(resp);
@@ -305,7 +311,7 @@ namespace apbd_projekt.Server.Services
         public async Task<Shared.Stock> GetFull(string ticker)
         {
             HttpClient httpClient = new();
-            string Request = "https://api.polygon.io/v3/reference/tickers/"+ ticker.ToUpper() +"?apiKey=Tnp2_HTpZRIDK2Jcrppho5lLwn1tUqI7"; //TODO: Move api key somewhere safer
+            string Request = "https://api.polygon.io/v3/reference/tickers/"+ ticker.ToUpper() +"?apiKey=" + _config["Stocks:PolygonAPIKey"];
             var resp = await httpClient.GetStreamAsync(Request);
             JsonNode data = await JsonSerializer.DeserializeAsync<JsonNode>(resp);
 
@@ -332,6 +338,54 @@ namespace apbd_projekt.Server.Services
             };
 
             return stock;
+        }
+
+        public async Task<ICollection<Article>> GetArticles(string ticker, int n)
+        {
+            JsonArray results = null;
+            var articles = new List<Article>();
+
+            try
+            {
+                var client = new HttpClient();
+                var request = "https://api.polygon.io/v2/reference/news?ticker="
+                              + ticker
+                              + "&limit=" + n
+                              + "&apiKey=" + _config["Stocks:PolygonAPIKey"];
+
+                var data = await JsonSerializer.DeserializeAsync<JsonNode>(await client.GetStreamAsync(request));
+                if (data is not null) results = (JsonArray)data["results"];
+            }
+            catch
+            {
+                return articles;
+            }
+
+            if (results is null)
+            {
+                return articles;
+            }
+
+            foreach (var result in results)
+            {
+                try
+                {
+                    var title = (string)result["title"] ?? "Missing Title";
+                    var content = (string)result["description"] ?? "";
+                    var link = (string)result["article_url"] ?? "";
+
+                    articles.Add(new Article(
+                        title,
+                        content,
+                        link
+                    ));
+                } catch
+                {
+                    continue;
+                }
+            }
+
+            return articles;
         }
     }
 }
